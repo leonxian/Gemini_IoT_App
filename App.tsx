@@ -5,10 +5,128 @@ import { IoTRecord, AggregatedStats, TrainedModelRegistry, ModelType, MLResult, 
 import { Dashboard } from './components/Dashboard';
 import { ModelBuilder } from './components/ModelBuilder';
 import { CRMSystem } from './components/CRMSystem';
-import { LayoutDashboard, Database, BrainCircuit, Users, Cpu, LineChart, RefreshCw, Pause, Play, Activity, Server, FileJson, Table, Filter, Search, Terminal, HardDrive, Network, AlertCircle, ChevronDown, ChevronRight, Code, FileSpreadsheet, Download, X, Loader2, Key, Hash, Type } from 'lucide-react';
+import { LayoutDashboard, Database, BrainCircuit, Users, Cpu, LineChart, RefreshCw, Pause, Play, Activity, Server, FileJson, Table, Filter, Search, Terminal, HardDrive, Network, AlertCircle, ChevronDown, ChevronRight, Code, FileSpreadsheet, Download, X, Loader2, Key, Hash, Type, Lock, User, ArrowRight, CheckCircle2, Sparkles, ShieldCheck } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 
+// --- LOGIN PAGE COMPONENT ---
+const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    // Simulate network delay for realism
+    setTimeout(() => {
+      if (username === 'admin' && password === '2025') {
+        setSuccess(true);
+        setTimeout(() => {
+           onLogin();
+        }, 800);
+      } else {
+        setError('认证失败：用户名或密码错误');
+        setIsLoading(false);
+      }
+    }, 800);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center relative overflow-hidden font-sans selection:bg-indigo-500/30">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full animate-pulse"></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 blur-[120px] rounded-full"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.15] pointer-events-none"></div>
+
+      {/* Login Card */}
+      <div className="w-full max-w-md relative z-10 p-6">
+         <div className="bg-[#0B1120]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden relative group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"></div>
+            
+            <div className="p-8 pt-10">
+               {/* Header */}
+               <div className="flex flex-col items-center mb-10 text-center">
+                  <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-6 group-hover:scale-105 transition-transform duration-500">
+                      <Cpu size={32} className="text-white" strokeWidth={2} />
+                  </div>
+                  <h1 className="text-2xl font-bold text-white tracking-tight mb-2">中茶智泡大师 <span className="text-indigo-400">AI</span></h1>
+                  <p className="text-slate-400 text-xs tracking-wider uppercase font-mono">Enterprise IoT Intelligence Platform</p>
+               </div>
+
+               {/* Form */}
+               <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-1">
+                      <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest pl-1">Account ID</label>
+                      <div className="relative group/input">
+                          <User className="absolute left-3 top-2.5 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors" size={16}/>
+                          <input 
+                            type="text" 
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:bg-slate-900/80 transition-all placeholder:text-slate-600 font-mono"
+                            placeholder="Enter username"
+                          />
+                      </div>
+                  </div>
+
+                  <div className="space-y-1">
+                      <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest pl-1">Passcode</label>
+                      <div className="relative group/input">
+                          <Lock className="absolute left-3 top-2.5 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors" size={16}/>
+                          <input 
+                            type="password" 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:bg-slate-900/80 transition-all placeholder:text-slate-600 font-mono tracking-widest"
+                            placeholder="••••••••"
+                          />
+                      </div>
+                  </div>
+
+                  {error && (
+                    <div className="flex items-center gap-2 text-rose-400 text-xs bg-rose-500/10 p-2 rounded border border-rose-500/20 animate-in slide-in-from-top-1">
+                        <AlertCircle size={14}/> {error}
+                    </div>
+                  )}
+
+                  <button 
+                    type="submit" 
+                    disabled={isLoading || success}
+                    className={`w-full py-3 rounded-lg font-bold text-sm uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 transition-all duration-300 ${success ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:shadow-indigo-500/25'}`}
+                  >
+                    {success ? (
+                        <><CheckCircle2 size={16}/> Access Granted</>
+                    ) : isLoading ? (
+                        <><Loader2 size={16} className="animate-spin"/> Verifying...</>
+                    ) : (
+                        <>Login System <ArrowRight size={16}/></>
+                    )}
+                  </button>
+               </form>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-slate-950/50 p-4 border-t border-white/5 flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                <span className="flex items-center gap-1"><ShieldCheck size={10}/> Secure Connection</span>
+                <span>v3.5.0 (Build 2025)</span>
+            </div>
+         </div>
+         
+         <div className="mt-8 text-center">
+             <p className="text-[10px] text-slate-600 uppercase tracking-widest">Authorized Personnel Only</p>
+         </div>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'models' | 'data' | 'crm'>('dashboard');
   const [data, setData] = useState<IoTRecord[]>([]);
   const [stats, setStats] = useState<AggregatedStats | null>(null);
@@ -63,12 +181,14 @@ const App = () => {
       setData(initialBatch);
       setStats(aggregateStats(initialBatch));
     };
-    loadInitialData();
-  }, []);
+    if (isAuthenticated) {
+        loadInitialData();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (streamIntervalRef.current) clearInterval(streamIntervalRef.current);
-    if (isLive) {
+    if (isLive && isAuthenticated) {
       streamIntervalRef.current = setInterval(() => {
         ingestRealtimeData();
       }, 5000); 
@@ -76,7 +196,7 @@ const App = () => {
     return () => {
       if (streamIntervalRef.current) clearInterval(streamIntervalRef.current);
     };
-  }, [isLive]);
+  }, [isLive, isAuthenticated]);
 
   const ingestRealtimeData = async () => {
     setDbStatus('writing');
@@ -138,6 +258,11 @@ const App = () => {
       setData(batch);
       setStats(aggregateStats(batch));
   };
+
+  // --- RENDER LOGIN IF NOT AUTHENTICATED ---
+  if (!isAuthenticated) {
+      return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="h-screen bg-[#020617] text-slate-200 font-sans flex overflow-hidden selection:bg-indigo-500/30">
@@ -217,7 +342,6 @@ const App = () => {
         </header>
 
         {/* Content Body */}
-        {/* FIXED: Removed p-6 padding and changed overflow handling for dashboard mode to allow fit-to-screen */}
         <div className={`flex-1 ${activeTab === 'dashboard' ? 'overflow-hidden p-4' : 'overflow-y-auto p-6'} scroll-smooth custom-scrollbar`}>
           <div className="max-w-[1920px] mx-auto h-full flex flex-col">
             {stats ? (
