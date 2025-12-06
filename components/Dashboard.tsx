@@ -51,13 +51,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, data }) => {
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-700 overflow-hidden bg-[#020617]">
       {/* Header Controls - Floating HUD Style */}
-      <div className="flex justify-between items-center px-4 py-3 shrink-0 z-[2000] relative border-b border-white/5 bg-[#0B1120]/80 backdrop-blur-md h-14">
-         <div className="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700/50 shadow-inner">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-4 py-3 shrink-0 z-[2000] relative border-b border-white/5 bg-[#0B1120]/80 backdrop-blur-md min-h-[56px] gap-2 md:gap-0">
+         <div className="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700/50 shadow-inner w-full md:w-auto overflow-x-auto">
             {['analytics', 'telemetry'].map((mode) => (
                 <button 
                    key={mode}
                    onClick={() => setViewMode(mode as any)}
-                   className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center gap-2 tracking-wide uppercase ${
+                   className={`flex-1 md:flex-none px-4 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-2 tracking-wide uppercase whitespace-nowrap ${
                       viewMode === mode ? (mode === 'analytics' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20') : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                    }`}
                 >
@@ -66,19 +66,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, data }) => {
                 </button>
             ))}
          </div>
-         <div className="flex items-center gap-6">
+         <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
              <div className="hidden md:flex items-center gap-4 text-[10px] text-slate-500 font-mono">
                  <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>数据流: 实时</span>
                  <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>网关: 已连接</span>
              </div>
-             <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+             <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)] ml-auto md:ml-0">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-[pulse_2s_infinite]"></div>
                 <span className="text-[10px] font-bold text-emerald-400 tracking-wider">系统在线</span>
             </div>
          </div>
       </div>
       
-      <div className="flex-1 min-h-0 relative p-4 overflow-hidden">
+      <div className="flex-1 min-h-0 relative p-4 lg:overflow-hidden overflow-y-auto">
         {viewMode === 'analytics' ? <AnalyticsView stats={stats} data={data} /> : <div className="h-full overflow-y-auto pr-1 pb-2 custom-scrollbar"><TelemetryView stats={stats} data={data} /></div>}
       </div>
     </div>
@@ -339,29 +339,29 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
   );
 
   return (
-    <div className="flex flex-col h-full gap-3 overflow-hidden">
+    <div className="flex flex-col h-full gap-3 overflow-visible lg:overflow-hidden">
        
        {/* 1. Global Toolbar */}
-       <div className="flex justify-between items-center bg-slate-900/60 p-1.5 rounded-xl border border-white/5 backdrop-blur-md shadow-2xl shrink-0 h-12">
-          <div className="flex items-center gap-4 pl-2">
+       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-slate-900/60 p-2 rounded-xl border border-white/5 backdrop-blur-md shadow-2xl shrink-0 min-h-[48px] gap-2 lg:gap-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 pl-1 lg:pl-2 w-full lg:w-auto">
              <div className="flex items-center gap-2 text-indigo-400">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20"><BarChart3 size={16} /></div>
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shrink-0"><BarChart3 size={16} /></div>
                 <div>
-                    <span className="block text-xs font-bold tracking-wide text-white">商业智能分析</span>
+                    <span className="block text-xs font-bold tracking-wide text-white whitespace-nowrap">商业智能分析</span>
                     <span className="block text-[9px] text-slate-500 font-mono tracking-wider">实时数据洞察</span>
                 </div>
              </div>
-             <div className="h-6 w-px bg-white/5 mx-2"></div>
+             <div className="hidden sm:block h-6 w-px bg-white/5 mx-2"></div>
              {/* Integrated Time Controls */}
-             <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800">
+             <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800 w-full sm:w-auto overflow-x-auto">
                 {['Day', 'Week', 'Month'].map(r => (
-                   <button key={r} onClick={()=>setTimeRange(r as any)} className={`px-4 py-1 text-[10px] font-bold rounded-md transition-all uppercase tracking-wider ${timeRange===r ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}>{r === 'Day' ? '今日实时' : r === 'Week' ? '本周累计' : '本月汇总'}</button>
+                   <button key={r} onClick={()=>setTimeRange(r as any)} className={`flex-1 sm:flex-none px-3 sm:px-4 py-1 text-[10px] font-bold rounded-md transition-all uppercase tracking-wider whitespace-nowrap ${timeRange===r ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}>{r === 'Day' ? '今日实时' : r === 'Week' ? '本周累计' : '本月汇总'}</button>
                 ))}
              </div>
           </div>
-          <div className="flex items-center gap-3 pr-2">
-             <button onClick={()=>setShowFullReport(true)} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-300 transition-all uppercase tracking-wider flex items-center gap-2 hover:border-slate-500"><FileSpreadsheet size={12}/> 导出数据报表</button>
-             <button onClick={handleGenerateReport} disabled={isGeneratingReport} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 border border-indigo-500/50">
+          <div className="flex items-center gap-3 pr-2 w-full lg:w-auto justify-end">
+             <button onClick={()=>setShowFullReport(true)} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-300 transition-all uppercase tracking-wider flex items-center gap-2 hover:border-slate-500 whitespace-nowrap"><FileSpreadsheet size={12}/> <span className="hidden sm:inline">导出数据报表</span><span className="sm:hidden">报表</span></button>
+             <button onClick={handleGenerateReport} disabled={isGeneratingReport} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 border border-indigo-500/50 whitespace-nowrap">
                  {isGeneratingReport ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}
                  {isGeneratingReport ? '分析中...' : 'AI 智能洞察'}
              </button>
@@ -369,7 +369,7 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
        </div>
 
        {/* 2. KPI HUD Grid */}
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0 h-[100px]">
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0 lg:h-[100px] h-auto">
            <ContextualKPI label="总营收 (GMV)" value={`¥${kpiStats.totalRev.toLocaleString()}`} trend="+24.5%" color="indigo" icon={DollarSign} data={kpiStats.sparklineData} target={85} />
            <ContextualKPI label="总冲泡杯数" value={kpiStats.totalBrews.toLocaleString()} trend="+8.3%" color="amber" icon={Coffee} data={kpiStats.sparklineData.map(d=>({val:d.val*0.8}))} target={62} />
            <ContextualKPI label="日活跃用户 (DAU)" value={kpiStats.dau.toLocaleString()} trend="+12.8%" color="emerald" icon={Users} data={kpiStats.sparklineData.map(d=>({val:d.val*0.5}))} target={94} />
@@ -377,11 +377,11 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
        </div>
 
        {/* 3. Main Analytics & AI Feed Split + 4. Deep Dive Metrics (Grid 3) Container */}
-       <div className="flex-1 min-h-0 flex flex-col gap-3">
+       <div className="flex-1 flex flex-col gap-3 lg:overflow-hidden h-auto lg:h-full">
           {/* Top Row: Revenue + AI Feed */}
-          <div className="grid grid-cols-12 gap-3 flex-[55] min-h-0">
+          <div className="grid grid-cols-12 gap-3 lg:flex-[55] lg:min-h-0 h-auto shrink-0">
               {/* Revenue Chart (Hero) */}
-              <div className="col-span-12 lg:col-span-8 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl relative group overflow-hidden">
+              <div className="col-span-12 lg:col-span-8 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl relative group overflow-hidden h-[350px] lg:h-auto">
                  <div className="absolute top-0 right-0 w-[300px] h-full bg-indigo-500/5 blur-[80px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100"></div>
                  <ChartHeader title="营收趋势与智能预测" icon={BarChart3} color="indigo" />
                  
@@ -407,7 +407,7 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
               </div>
 
               {/* AI Briefing Feed */}
-              <div className="col-span-12 lg:col-span-4 bg-slate-900/50 border border-white/5 rounded-xl p-0 flex flex-col backdrop-blur-md shadow-2xl relative overflow-hidden">
+              <div className="col-span-12 lg:col-span-4 bg-slate-900/50 border border-white/5 rounded-xl p-0 flex flex-col backdrop-blur-md shadow-2xl relative overflow-hidden h-[350px] lg:h-auto">
                  <div className="p-3 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                      <h3 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-slate-200"><BrainCircuit size={14} className="text-emerald-400" /> AI 神经网络情报流</h3>
                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></div>
@@ -437,9 +437,9 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
           </div>
 
           {/* Bottom Row: Deep Dive */}
-          <div className="grid grid-cols-12 gap-3 flex-[45] min-h-0">
+          <div className="grid grid-cols-12 gap-3 lg:flex-[45] lg:min-h-0 h-auto shrink-0">
                 {/* Regional Heatmap (Span 3) */}
-                <div className="col-span-12 md:col-span-4 lg:col-span-3 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl min-h-0">
+                <div className="col-span-12 md:col-span-4 lg:col-span-3 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl h-[300px] lg:h-auto min-h-0">
                     <ChartHeader title="区域销售热力榜" icon={MapPin} color="rose" />
                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
                         {cityHeatmapData.map((item, idx) => (
@@ -462,7 +462,7 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
                 </div>
 
                 {/* BCG Matrix (Span 5) */}
-                <div className="col-span-12 md:col-span-8 lg:col-span-5 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl min-h-0 relative">
+                <div className="col-span-12 md:col-span-8 lg:col-span-5 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl h-[300px] lg:h-auto min-h-0 relative">
                     <ChartHeader title="产品波士顿矩阵 (BCG)" icon={Target} color="amber" />
                     <div className="flex-1 min-h-0 relative">
                         {/* Quadrant Backgrounds */}
@@ -489,7 +489,7 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
                 </div>
 
                 {/* Market Share Treemap (Span 4) */}
-                <div className="col-span-12 md:col-span-12 lg:col-span-4 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl min-h-0">
+                <div className="col-span-12 md:col-span-12 lg:col-span-4 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl h-[300px] lg:h-auto min-h-0">
                     <ChartHeader title="全球品类市场份额" icon={Layers} color="cyan" />
                     <div className="flex-1 min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
@@ -502,7 +502,7 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
 
        {showFullReport && (
           <div className="fixed inset-0 z-[2000] bg-black/80 flex items-center justify-center backdrop-blur-sm p-4">
-            <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-5xl h-[700px] flex flex-col shadow-2xl relative overflow-hidden">
+            <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-5xl h-[90vh] lg:h-[700px] flex flex-col shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"></div>
               <div className="flex justify-between mb-6 border-b border-slate-800 pb-4">
                 <div>
@@ -512,9 +512,9 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
                 <button className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors" onClick={()=>setShowFullReport(false)}><X size={20}/></button>
               </div>
               <div className="flex-1 overflow-auto custom-scrollbar bg-slate-950/50 rounded-xl border border-slate-800">
-                <table className="w-full text-left text-xs font-mono border-collapse relative">
+                <table className="w-full text-left text-xs font-mono border-collapse relative min-w-[800px]">
                     <thead className="bg-slate-900 text-slate-400 sticky top-0 z-10 backdrop-blur border-b border-slate-800 shadow-sm">
-                        <tr>{['时间戳','城市','饮品类型','数量','营收','水温','延迟'].map(h=><th key={h} className="px-6 py-4 font-bold tracking-wider">{h}</th>)}</tr>
+                        <tr>{['时间戳','城市','饮品类型','数量','营收','水温','延迟'].map(h=><th key={h} className="px-6 py-4 font-bold tracking-wider whitespace-nowrap">{h}</th>)}</tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50 text-slate-300">
                         {filteredData.slice(0, 500).map(r => (
@@ -541,7 +541,7 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
 
        {showAIReportModal && (
            <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center backdrop-blur-md animate-in fade-in p-4">
-               <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-full max-w-4xl h-[700px] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+               <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-full max-w-4xl h-[90vh] lg:h-[700px] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
                    <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
                        <div><h3 className="text-white font-bold text-lg flex items-center gap-2"><BrainCircuit size={20} className="text-indigo-400"/> AI 战略洞察报告</h3></div>
                        <button onClick={()=>setShowAIReportModal(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={18} className="text-slate-400"/></button>
@@ -563,7 +563,7 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
 };
 
 const ContextualKPI = ({ label, value, trend, color, icon: Icon, data, target }: any) => (
-    <div className={`bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-xl p-4 shadow-lg relative overflow-hidden flex flex-col justify-between group hover:border-${color}-500/30 transition-all duration-500 backdrop-blur-md`}>
+    <div className={`bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-xl p-4 shadow-lg relative overflow-hidden flex flex-col justify-between group hover:border-${color}-500/30 transition-all duration-500 backdrop-blur-md min-h-[100px]`}>
         {/* Ambient Glow */}
         <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full bg-${color}-500/10 blur-[60px] group-hover:bg-${color}-500/20 transition-all`}></div>
         
@@ -693,8 +693,8 @@ const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
   return (
     <div className="flex flex-col h-full gap-4 pb-2">
        {/* Telemetry Stats Bar */}
-       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 shrink-0 h-[80px]">
-          <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-sm border-l-4 border-l-indigo-500 flex flex-col justify-center">
+       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 shrink-0 h-auto md:h-[80px]">
+          <div className="col-span-2 md:col-span-1 bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-sm border-l-4 border-l-indigo-500 flex flex-col justify-center">
              <div className="flex justify-between items-center mb-1"><span className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">在线状态</span><span className="text-lg font-bold text-slate-200 font-mono">{fleetStats.total} <span className="text-xs text-slate-500 font-sans font-normal">台</span></span></div>
              <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-slate-800 mb-1"><div style={{width: `${fleetStats.activePct}%`}} className="bg-emerald-500"></div><div style={{width: `${fleetStats.maintPct}%`}} className="bg-amber-500"></div><div className="bg-red-500 flex-1"></div></div>
              <div className="flex justify-between text-[9px] text-slate-400 font-mono uppercase"><span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>{fleetStats.activePct}%</span><span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>{fleetStats.maintPct}%</span></div>
@@ -723,7 +723,7 @@ const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0">
                  <div className="p-2 border-b border-slate-800 bg-slate-900/90 backdrop-blur flex justify-between items-center shrink-0"><h3 className="text-slate-100 font-semibold flex items-center gap-2 text-sm"><MonitorSmartphone size={16} className="text-cyan-400"/> 设备运行监控列表</h3><div className="text-xs text-slate-500 font-mono tracking-tight">Viewing {visibleFleet.length} Devices</div></div>
                  <div className="flex-1 overflow-auto bg-[#050911] custom-scrollbar">
-                    <table className="w-full text-left text-[11px] font-mono border-collapse relative">
+                    <table className="w-full text-left text-[11px] font-mono border-collapse relative min-w-[600px]">
                        <thead className="bg-slate-800/90 text-slate-400 sticky top-0 z-10 backdrop-blur-md shadow-sm">
                           <tr>{['机器编号','地理位置','状态','当日销售','IoT 接口','信号','延迟','错误率','负载',''].map(h=><th key={h} className="px-4 py-2 font-semibold border-b border-slate-700 text-slate-400 whitespace-nowrap">{h}</th>)}</tr>
                        </thead>
@@ -752,7 +752,7 @@ const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
 };
 
 const StatusWidgetCompact = ({ label, value, icon, color }: any) => (
-   <div className={`bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm flex justify-between items-center border-l-4 h-full ${color==='cyan'?'border-l-cyan-500':color==='rose'?'border-l-rose-500':color==='emerald'?'border-l-emerald-500':'border-l-amber-500'}`}>
+   <div className={`bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm flex justify-between items-center border-l-4 h-full min-h-[70px] ${color==='cyan'?'border-l-cyan-500':color==='rose'?'border-l-rose-500':color==='emerald'?'border-l-emerald-500':'border-l-amber-500'}`}>
       <div><p className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">{label}</p><h4 className="text-lg font-bold text-slate-200 font-mono mt-0.5">{value}</h4></div>
       <div className="opacity-80 p-2 rounded-full bg-slate-800/50">{icon}</div>
    </div>

@@ -59,11 +59,11 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
   };
 
   return (
-    <div className="flex h-full gap-4 animate-in fade-in duration-500">
-      {/* Sidebar */}
-      <div className="w-[240px] flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl shrink-0">
-        <div className="p-4 border-b border-slate-800"><h3 className="text-slate-200 font-bold flex items-center gap-2 text-sm"><Database size={16} className="text-indigo-400"/> 模型算法库</h3></div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+    <div className="flex flex-col lg:flex-row h-full gap-4 animate-in fade-in duration-500 overflow-hidden">
+      {/* Sidebar - Models List */}
+      <div className="w-full lg:w-[240px] flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl shrink-0 lg:h-full max-h-[200px] lg:max-h-full">
+        <div className="p-4 border-b border-slate-800 sticky top-0 bg-slate-900 z-10"><h3 className="text-slate-200 font-bold flex items-center gap-2 text-sm"><Database size={16} className="text-indigo-400"/> 模型算法库</h3></div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
            {AVAILABLE_MODELS.map(model => (
              <div key={model.id} onClick={() => !isTraining && setSelectedModel(model.id)} className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedModel === model.id ? 'bg-indigo-900/20 border-indigo-500 ring-1 ring-indigo-500/50' : 'bg-transparent border-transparent hover:bg-slate-800 hover:border-slate-700'}`}>
                 <div className="flex items-center gap-2 font-bold text-slate-200 text-xs mb-1">{model.icon} {model.name}</div>
@@ -74,29 +74,29 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
       </div>
 
       {/* Main Workspace */}
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl h-[600px] lg:h-full">
          {/* Top Tabs */}
-         <div className="flex border-b border-slate-800 bg-slate-950/30">
+         <div className="flex border-b border-slate-800 bg-slate-950/30 overflow-x-auto no-scrollbar">
              {[{id:'overview',l:'模型概览',i:Eye},{id:'train',l:'训练与调优',i:Sliders},{id:'versions',l:'版本管理与部署',i:GitBranch},{id:'inference',l:'在线推理演示',i:PlayCircle}].map(t => (
-                 <button key={t.id} onClick={() => setActiveTab(t.id as any)} disabled={isTraining && t.id!=='train'} className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-r border-slate-800/50 transition-colors ${activeTab === t.id ? 'bg-indigo-600/10 text-indigo-400 border-b-2 border-b-indigo-500' : 'text-slate-500 hover:text-slate-300'}`}><t.i size={14}/> {t.l}</button>
+                 <button key={t.id} onClick={() => setActiveTab(t.id as any)} disabled={isTraining && t.id!=='train'} className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-r border-slate-800/50 transition-colors whitespace-nowrap px-4 ${activeTab === t.id ? 'bg-indigo-600/10 text-indigo-400 border-b-2 border-b-indigo-500' : 'text-slate-500 hover:text-slate-300'}`}><t.i size={14}/> {t.l}</button>
              ))}
          </div>
 
-         <div className="flex-1 flex overflow-hidden">
+         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
              {/* Left Content Area */}
-             <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-slate-900 p-6 h-full flex flex-col">
+             <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-slate-900 p-4 lg:p-6 h-full flex flex-col">
                  {activeTab === 'overview' && (
-                     <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto text-center">
+                     <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto text-center p-4">
                          <div className="p-6 bg-slate-800/50 rounded-full mb-6 ring-4 ring-slate-800">{AVAILABLE_MODELS.find(m=>m.id===selectedModel)?.icon}</div>
-                         <h2 className="text-3xl font-bold text-white mb-4">{AVAILABLE_MODELS.find(m=>m.id===selectedModel)?.name}</h2>
-                         <p className="text-slate-400 mb-8 leading-relaxed">{AVAILABLE_MODELS.find(m=>m.id===selectedModel)?.desc}</p>
+                         <h2 className="text-2xl lg:text-3xl font-bold text-white mb-4">{AVAILABLE_MODELS.find(m=>m.id===selectedModel)?.name}</h2>
+                         <p className="text-slate-400 mb-8 leading-relaxed text-sm lg:text-base">{AVAILABLE_MODELS.find(m=>m.id===selectedModel)?.desc}</p>
                          <button onClick={() => setActiveTab('train')} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-indigo-500/20"><Play size={16}/> 开始训练模型</button>
                      </div>
                  )}
                  {activeTab === 'train' && (
-                     <div className="grid grid-cols-12 gap-6 h-full">
-                         <div className="col-span-4 flex flex-col gap-4 border-r border-slate-800 pr-6 h-full overflow-hidden">
-                             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full overflow-y-auto lg:overflow-hidden">
+                         <div className="lg:col-span-4 flex flex-col gap-4 lg:border-r border-slate-800 pr-0 lg:pr-6 h-auto lg:h-full lg:overflow-hidden shrink-0">
+                             <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar space-y-4">
                                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Settings size={14}/> 超参数配置 (Hyperparameters)</h3>
                                  {[{l:'总迭代轮次 (Total Epochs)',k:'epochs',min:10,max:100,step:10},{l:'批次大小 (Batch Size)',k:'batchSize',opts:[32,64,128]}].map(p=>(
                                      <div key={p.l}>
@@ -110,10 +110,12 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
                                  <button onClick={isTraining ? () => abortControllerRef.current?.abort() : startTraining} className={`w-full py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 ${isTraining ? 'bg-rose-900/20 text-rose-400 border border-rose-500/50' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'}`}>{isTraining ? '停止训练' : activeStep === 5 ? '重新训练模型' : '开始训练模型'}</button>
                              </div>
                          </div>
-                         <div className="col-span-8 flex flex-col gap-4 h-full overflow-hidden">
-                             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex justify-between items-center relative shrink-0">
-                                 {['环境初始化','算法评估 1','算法评估 2','算法评估 3','最优模型验证'].map((s,i)=><div key={s} className={`z-10 flex flex-col items-center gap-1 ${activeStep>=i?'text-indigo-400':'text-slate-700'}`}><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold bg-slate-900 ${activeStep>=i?'border-indigo-500':'border-slate-800'}`}>{i+1}</div><span className="text-[9px] uppercase font-bold">{s}</span></div>)}
-                                 <div className="absolute top-[28px] left-8 right-8 h-0.5 bg-slate-800 z-0"><div className="h-full bg-indigo-500 transition-all duration-500" style={{width:`${(Math.max(0,activeStep)/4)*100}%`}}></div></div>
+                         <div className="lg:col-span-8 flex flex-col gap-4 h-full overflow-hidden min-h-[400px]">
+                             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center relative shrink-0 gap-4 sm:gap-0 overflow-hidden">
+                                 <div className="w-full sm:w-auto flex justify-between gap-2 overflow-x-auto no-scrollbar w-full">
+                                     {['环境初始化','算法评估 1','算法评估 2','算法评估 3','最优模型验证'].map((s,i)=><div key={s} className={`z-10 flex flex-col items-center gap-1 min-w-[60px] ${activeStep>=i?'text-indigo-400':'text-slate-700'}`}><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold bg-slate-900 ${activeStep>=i?'border-indigo-500':'border-slate-800'}`}>{i+1}</div><span className="text-[9px] uppercase font-bold text-center">{s.split(' ')[0]}</span></div>)}
+                                 </div>
+                                 <div className="absolute top-[28px] left-8 right-8 h-0.5 bg-slate-800 z-0 hidden sm:block"><div className="h-full bg-indigo-500 transition-all duration-500" style={{width:`${(Math.max(0,activeStep)/4)*100}%`}}></div></div>
                              </div>
                              
                              <div className="h-48 bg-slate-950 border border-slate-800 rounded-xl p-4 relative shrink-0">
@@ -122,7 +124,7 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
                              </div>
                              
                              {/* Console - flex-1 to fill remaining vertical space */}
-                             <div className="flex-1 bg-black border border-slate-800 rounded-xl p-3 font-mono text-xs overflow-hidden flex flex-col min-h-0">
+                             <div className="flex-1 bg-black border border-slate-800 rounded-xl p-3 font-mono text-xs overflow-hidden flex flex-col min-h-[150px]">
                                  <div className="flex items-center gap-2 text-slate-500 mb-2 pb-1 border-b border-slate-900 shrink-0"><Terminal size={12}/> 控制台终端 (Console)</div>
                                  <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 text-emerald-500/80">
                                      {logs.map((l,i)=><div key={i}>{l}</div>)}
@@ -136,11 +138,11 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
                      <div className="flex flex-col h-full">
                          <div className="flex justify-between items-center mb-6">
                              <h3 className="text-lg font-bold text-white flex items-center gap-2"><GitBranch size={18} className="text-indigo-400"/> 版本历史管理</h3>
-                             <div className="text-xs text-slate-500 font-mono">当前生产环境版本: <span className="text-emerald-400">{currentLifecycle.productionVersionId || 'NONE'}</span></div>
+                             <div className="text-xs text-slate-500 font-mono hidden sm:block">当前生产环境版本: <span className="text-emerald-400">{currentLifecycle.productionVersionId || 'NONE'}</span></div>
                          </div>
                          <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
                              <div className="overflow-x-auto custom-scrollbar h-full">
-                                <table className="w-full text-left text-xs font-mono">
+                                <table className="w-full text-left text-xs font-mono min-w-[600px]">
                                    <thead className="bg-slate-900/90 text-slate-500 sticky top-0 z-10 border-b border-slate-800">
                                       <tr><th className="px-6 py-4 font-bold uppercase tracking-wider">版本号</th><th className="px-6 py-4 font-bold uppercase tracking-wider">创建时间</th><th className="px-6 py-4 font-bold uppercase tracking-wider">优胜算法 (Algorithm)</th><th className="px-6 py-4 font-bold uppercase tracking-wider">核心指标 (Acc/Loss)</th><th className="px-6 py-4 font-bold uppercase tracking-wider text-right">操作</th></tr>
                                    </thead>
@@ -166,12 +168,12 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
                          </div>
                      </div>
                  )}
-                 {activeTab === 'inference' && <div className="p-10 flex flex-col items-center gap-4"><div className="grid grid-cols-3 gap-4 w-full max-w-xl">{Object.keys(inferenceInput).map(k=><div key={k}><label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">{k}</label><input type="number" className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-sm text-white" value={(inferenceInput as any)[k]} onChange={e=>setInferenceInput({...inferenceInput,[k]:parseFloat(e.target.value)})}/></div>)}</div><button onClick={()=>setInferenceResult(runInference(selectedModel, inferenceInput, lastResult || currentLifecycle.versions.find(v=>v.status==='production')?.result || null))} className="px-6 py-2 bg-indigo-600 text-white rounded font-bold">运行推理测试</button>{inferenceResult && <div className="bg-slate-950 border border-emerald-500/30 p-4 rounded text-emerald-400 font-mono text-sm w-full max-w-xl whitespace-pre-line">{inferenceResult}</div>}</div>}
+                 {activeTab === 'inference' && <div className="p-4 lg:p-10 flex flex-col items-center gap-4"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-xl">{Object.keys(inferenceInput).map(k=><div key={k}><label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">{k}</label><input type="number" className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-sm text-white" value={(inferenceInput as any)[k]} onChange={e=>setInferenceInput({...inferenceInput,[k]:parseFloat(e.target.value)})}/></div>)}</div><button onClick={()=>setInferenceResult(runInference(selectedModel, inferenceInput, lastResult || currentLifecycle.versions.find(v=>v.status==='production')?.result || null))} className="px-6 py-2 bg-indigo-600 text-white rounded font-bold">运行推理测试</button>{inferenceResult && <div className="bg-slate-950 border border-emerald-500/30 p-4 rounded text-emerald-400 font-mono text-sm w-full max-w-xl whitespace-pre-line">{inferenceResult}</div>}</div>}
              </div>
 
              {/* Right Panel (Details) */}
              {(activeTab==='overview'||activeTab==='train') && (
-                 <div className="w-[300px] border-l border-slate-800 bg-slate-950/30 flex flex-col p-4 gap-4 h-full">
+                 <div className="w-full lg:w-[300px] lg:border-l border-t lg:border-t-0 border-slate-800 bg-slate-950/30 flex flex-col p-4 gap-4 h-auto lg:h-full lg:overflow-y-auto">
                      {activeTab==='train' && lastResult && (
                          <div className="bg-slate-900 border border-emerald-500/30 rounded-xl p-4 shadow-lg animate-in slide-in-from-right flex flex-col gap-3 shrink-0">
                              <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2"><CheckCircle size={12}/> 训练成功完成</div>
@@ -195,9 +197,9 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
                              </div>
                          </div>
                      )}
-                     <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col overflow-hidden">
+                     <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col lg:overflow-hidden min-h-[200px]">
                          <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-2 shrink-0"><Brain size={14}/> AI 实验洞察报告</h4>
-                         <div className="flex-1 overflow-y-auto custom-scrollbar text-xs text-slate-300 leading-relaxed font-light whitespace-pre-wrap">{loadingInsight ? <span className="animate-pulse">正在生成洞察...</span> : aiInsight || <span className="text-slate-600 italic">暂无报告，请先训练模型。</span>}</div>
+                         <div className="flex-1 lg:overflow-y-auto custom-scrollbar text-xs text-slate-300 leading-relaxed font-light whitespace-pre-wrap">{loadingInsight ? <span className="animate-pulse">正在生成洞察...</span> : aiInsight || <span className="text-slate-600 italic">暂无报告，请先训练模型。</span>}</div>
                      </div>
                  </div>
              )}

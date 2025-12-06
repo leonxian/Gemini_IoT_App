@@ -5,7 +5,7 @@ import { IoTRecord, AggregatedStats, TrainedModelRegistry, ModelType, MLResult, 
 import { Dashboard } from './components/Dashboard';
 import { ModelBuilder } from './components/ModelBuilder';
 import { CRMSystem } from './components/CRMSystem';
-import { LayoutDashboard, Database, BrainCircuit, Users, Cpu, LineChart, RefreshCw, Pause, Play, Activity, Server, FileJson, Table, Filter, Search, Terminal, HardDrive, Network, AlertCircle, ChevronDown, ChevronRight, Code, FileSpreadsheet, Download, X, Loader2, Key, Hash, Type, Lock, User, ArrowRight, CheckCircle2, Sparkles, ShieldCheck, LogOut, Zap, Layers } from 'lucide-react';
+import { LayoutDashboard, Database, BrainCircuit, Users, Cpu, LineChart, RefreshCw, Pause, Play, Activity, Server, FileJson, Table, Filter, Search, Terminal, HardDrive, Network, AlertCircle, ChevronDown, ChevronRight, Code, FileSpreadsheet, Download, X, Loader2, Key, Hash, Type, Lock, User, ArrowRight, CheckCircle2, Sparkles, ShieldCheck, LogOut, Zap, Layers, Menu } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 
 // --- LOGIN PAGE COMPONENT ---
@@ -130,6 +130,7 @@ const App = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'models' | 'data' | 'crm'>('dashboard');
   const [data, setData] = useState<IoTRecord[]>([]);
   const [stats, setStats] = useState<AggregatedStats | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Real-time Stream State
   const [isLive, setIsLive] = useState(true);
@@ -259,6 +260,8 @@ const App = () => {
       setStats(aggregateStats(batch));
   };
 
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   // --- RENDER LOGIN IF NOT AUTHENTICATED ---
   if (!isAuthenticated) {
       return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
@@ -267,17 +270,31 @@ const App = () => {
   return (
     <div className="h-screen bg-[#020617] text-slate-200 font-sans flex overflow-hidden selection:bg-indigo-500/30">
       
-      {/* Sidebar - Precision Layout */}
-      <aside className="w-64 bg-[#0B1120] border-r border-slate-800/80 flex flex-col z-30 shadow-2xl shrink-0 h-full">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={closeSidebar}
+        />
+      )}
+
+      {/* Sidebar - Responsive */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0B1120] border-r border-slate-800/80 flex flex-col shadow-2xl shrink-0 h-full transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* 1. Header (Fixed) */}
         <div className="flex flex-col border-b border-slate-800/80 shrink-0">
-            <div className="h-16 flex items-center px-6 gap-3">
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
-                    <Cpu size={18} className="text-white" strokeWidth={2.5} />
+            <div className="h-16 flex items-center px-6 gap-3 justify-between lg:justify-start">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
+                        <Cpu size={18} className="text-white" strokeWidth={2.5} />
+                    </div>
+                    <span className="font-bold text-sm tracking-tight text-white truncate">
+                        中茶智泡大师<span className="text-indigo-500 ml-1">AI</span>
+                    </span>
                 </div>
-                <span className="font-bold text-sm tracking-tight text-white truncate">
-                    中茶智泡大师<span className="text-indigo-500 ml-1">AI</span>
-                </span>
+                {/* Mobile close button */}
+                <button onClick={closeSidebar} className="lg:hidden text-slate-400 hover:text-white">
+                    <X size={20} />
+                </button>
             </div>
             {/* LOGOUT BUTTON (SIDEBAR TOP) */}
             <div className="px-4 pb-4">
@@ -292,10 +309,10 @@ const App = () => {
 
         {/* 2. Nav (Scrollable) */}
         <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar min-h-0">
-          <SidebarItem icon={<LayoutDashboard size={18} />} label="全域监控总览" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-          <SidebarItem icon={<Users size={18} />} label="智能客户管理" active={activeTab === 'crm'} onClick={() => setActiveTab('crm')} />
-          <SidebarItem icon={<BrainCircuit size={18} />} label="AI 模型实验室" active={activeTab === 'models'} onClick={() => setActiveTab('models')} />
-           <SidebarItem icon={<Database size={18} />} label="IoT 数据中心" active={activeTab === 'data'} onClick={() => setActiveTab('data')} />
+          <SidebarItem icon={<LayoutDashboard size={18} />} label="全域监控总览" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); closeSidebar(); }} />
+          <SidebarItem icon={<Users size={18} />} label="智能客户管理" active={activeTab === 'crm'} onClick={() => { setActiveTab('crm'); closeSidebar(); }} />
+          <SidebarItem icon={<BrainCircuit size={18} />} label="AI 模型实验室" active={activeTab === 'models'} onClick={() => { setActiveTab('models'); closeSidebar(); }} />
+           <SidebarItem icon={<Database size={18} />} label="IoT 数据中心" active={activeTab === 'data'} onClick={() => { setActiveTab('data'); closeSidebar(); }} />
         </nav>
 
         {/* 3. Footer (Fixed at bottom) */}
@@ -320,19 +337,22 @@ const App = () => {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.15] pointer-events-none"></div>
         
         {/* Header - Glassmorphism */}
-        <header className="h-16 bg-[#0B1120]/60 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between px-6 z-20 shrink-0 sticky top-0">
+        <header className="h-16 bg-[#0B1120]/60 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between px-4 lg:px-6 z-20 shrink-0 sticky top-0">
            <div className="flex items-center gap-4">
-              <h1 className="text-base font-semibold text-slate-100 flex items-center gap-2.5">
-                {activeTab === 'dashboard' && <><LineChart size={18} className="text-indigo-400"/> 企业级运营监控仪表盘</>}
-                {activeTab === 'crm' && <><Users size={18} className="text-indigo-400"/> 客户全景画像与智能营销</>}
-                {activeTab === 'models' && <><BrainCircuit size={18} className="text-indigo-400"/> 机器学习模型训练平台</>}
-                {activeTab === 'data' && <><Database size={18} className="text-indigo-400"/> IoT 原始数据探索</>}
+              <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-slate-400 hover:text-white">
+                  <Menu size={20} />
+              </button>
+              <h1 className="text-sm lg:text-base font-semibold text-slate-100 flex items-center gap-2.5 truncate">
+                {activeTab === 'dashboard' && <><LineChart size={18} className="text-indigo-400 shrink-0"/> <span className="truncate">企业级运营监控仪表盘</span></>}
+                {activeTab === 'crm' && <><Users size={18} className="text-indigo-400 shrink-0"/> <span className="truncate">客户全景画像与智能营销</span></>}
+                {activeTab === 'models' && <><BrainCircuit size={18} className="text-indigo-400 shrink-0"/> <span className="truncate">机器学习模型训练平台</span></>}
+                {activeTab === 'data' && <><Database size={18} className="text-indigo-400 shrink-0"/> <span className="truncate">IoT 原始数据探索</span></>}
               </h1>
            </div>
            
-           <div className="flex items-center gap-3">
+           <div className="flex items-center gap-2 lg:gap-3">
               <div className="flex items-center bg-slate-900 border border-slate-700/50 rounded-lg p-0.5 shadow-sm">
-                 <div className="flex items-center px-3 gap-2 border-r border-slate-700/50 mr-1 py-1">
+                 <div className="hidden sm:flex items-center px-3 gap-2 border-r border-slate-700/50 mr-1 py-1">
                     <Activity size={14} className={isLive ? "text-emerald-400 animate-pulse" : "text-slate-600"} />
                     <span className="text-xs font-mono text-slate-400 tabular-nums">{isLive ? "实时流: 运行中" : "实时流: 已暂停"}</span>
                  </div>
@@ -353,14 +373,14 @@ const App = () => {
               {/* HEADER LOGOUT BUTTON */}
               <button 
                 onClick={() => setIsAuthenticated(false)}
-                className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
+                className="lg:hidden p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
                 title="退出登录"
               >
                 <LogOut size={18} />
               </button>
 
               <div 
-                className="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-indigo-400 ring-2 ring-transparent hover:ring-rose-500/50 hover:bg-rose-900/20 hover:text-rose-400 transition-all cursor-pointer group relative"
+                className="hidden lg:flex h-8 w-8 rounded-full bg-slate-800 border border-slate-700 items-center justify-center text-xs font-bold text-indigo-400 ring-2 ring-transparent hover:ring-rose-500/50 hover:bg-rose-900/20 hover:text-rose-400 transition-all cursor-pointer group relative"
                 onClick={() => setIsAuthenticated(false)}
                 title="退出登录"
               >
@@ -371,7 +391,7 @@ const App = () => {
         </header>
 
         {/* Content Body */}
-        <div className={`flex-1 ${activeTab === 'dashboard' ? 'overflow-hidden p-4' : 'overflow-y-auto p-6'} scroll-smooth custom-scrollbar`}>
+        <div className={`flex-1 ${activeTab === 'dashboard' ? 'lg:overflow-hidden overflow-y-auto p-2 lg:p-4' : 'overflow-y-auto p-4 lg:p-6'} scroll-smooth custom-scrollbar`}>
           <div className="max-w-[1920px] mx-auto h-full flex flex-col">
             {stats ? (
               <>
@@ -522,8 +542,8 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
             </div>
 
             {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[320px]">
-                <div className="lg:col-span-2 bg-[#020617] border border-slate-800 rounded-xl p-0 shadow-2xl flex flex-col relative overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[320px]">
+                <div className="lg:col-span-2 bg-[#020617] border border-slate-800 rounded-xl p-0 shadow-2xl flex flex-col relative overflow-hidden h-[300px] lg:h-auto">
                     <div className="p-4 border-b border-white/5 bg-slate-900/30 flex justify-between items-center">
                         <h3 className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2">
                             <Activity size={14} /> 数据摄入速率 (Ingestion Velocity)
@@ -549,7 +569,7 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
                     </div>
                 </div>
 
-                <div className="bg-[#020617] border border-slate-800 rounded-xl p-0 shadow-2xl flex flex-col">
+                <div className="bg-[#020617] border border-slate-800 rounded-xl p-0 shadow-2xl flex flex-col h-[300px] lg:h-auto">
                     <div className="p-4 border-b border-white/5 bg-slate-900/30">
                         <h3 className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
                             <Network size={14} /> 传输协议分布
@@ -582,18 +602,18 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
 
             {/* Console */}
             <div className="bg-[#020617] border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex flex-col min-h-[600px] flex-1">
-                <div className="bg-[#0B1120] border-b border-slate-800 p-2 flex justify-between items-center">
+                <div className="bg-[#0B1120] border-b border-slate-800 p-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div className="flex items-center gap-2 px-2">
                         <Terminal size={14} className="text-slate-400" />
                         <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Data Lake Console</span>
                     </div>
-                    <div className="flex gap-2">
-                         <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800">
+                    <div className="flex gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar">
+                         <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800 shrink-0">
                              <button onClick={() => setActiveFilters({ city: 'All', beverage: 'All', status: 'All' })} className="px-3 py-1 text-[10px] font-bold text-slate-400 hover:text-white transition-colors uppercase">Reset</button>
                              <button onClick={() => setShowFilterPanel(!showFilterPanel)} className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all uppercase flex items-center gap-1 ${showFilterPanel ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}><Filter size={10}/> Filter</button>
                          </div>
-                         <button onClick={() => setShowFullReport(true)} className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-bold text-emerald-400 transition-all uppercase tracking-wider flex items-center gap-1.5"><FileSpreadsheet size={12}/> Report</button>
-                         <button onClick={() => setShowSchemaModal(true)} className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-bold text-indigo-400 transition-all uppercase tracking-wider flex items-center gap-1.5"><Code size={12}/> Schema</button>
+                         <button onClick={() => setShowFullReport(true)} className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-bold text-emerald-400 transition-all uppercase tracking-wider flex items-center gap-1.5 shrink-0"><FileSpreadsheet size={12}/> Report</button>
+                         <button onClick={() => setShowSchemaModal(true)} className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-bold text-indigo-400 transition-all uppercase tracking-wider flex items-center gap-1.5 shrink-0"><Code size={12}/> Schema</button>
                     </div>
                 </div>
                 
@@ -623,7 +643,7 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
                      </div>
                      
                      {showFilterPanel && (
-                        <div className="flex gap-3 animate-in slide-in-from-top-2">
+                        <div className="flex flex-wrap gap-3 animate-in slide-in-from-top-2">
                             {['city', 'beverage', 'status'].map(key => (
                                 <select 
                                     key={key}
@@ -641,7 +661,7 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
 
                 {/* Data Grid */}
                 <div className="flex-1 overflow-auto custom-scrollbar bg-[#020617] relative">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
                         <thead className="bg-[#0B1120] text-slate-500 sticky top-0 z-10 shadow-sm">
                             <tr>
                                 <th className="px-4 py-2 w-10 border-b border-slate-800"></th>
@@ -669,7 +689,7 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
                                     {expandedRow === row.id && (
                                         <tr>
                                             <td colSpan={7} className="px-0 py-0 bg-[#050911]">
-                                                <div className="p-4 border-b border-slate-800 relative grid grid-cols-2 gap-8">
+                                                <div className="p-4 border-b border-slate-800 relative grid grid-cols-1 md:grid-cols-2 gap-8">
                                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
                                                     <div>
                                                         <div className="text-[9px] font-bold text-slate-600 uppercase mb-2">Raw JSON Payload</div>
@@ -699,14 +719,14 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
 
             {/* Full Report Modal */}
             {showFullReport && (
-                <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center backdrop-blur-md animate-in fade-in">
-                    <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-[900px] h-[600px] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+                <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center backdrop-blur-md animate-in fade-in p-4">
+                    <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-full max-w-5xl h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
                         <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
                             <div><h3 className="text-white font-bold text-base flex items-center gap-2"><FileSpreadsheet size={16} className="text-emerald-400"/> 完整 IoT 数据报表</h3></div>
                             <button onClick={()=>setShowFullReport(false)} className="p-1 hover:bg-slate-800 rounded-full transition-colors"><X size={16} className="text-slate-400"/></button>
                         </div>
                         <div className="flex-1 bg-slate-950 overflow-auto custom-scrollbar">
-                            <table className="w-full text-left text-xs font-mono border-collapse relative">
+                            <table className="w-full text-left text-xs font-mono border-collapse relative min-w-[800px]">
                             <thead className="bg-slate-900/90 text-slate-400 sticky top-0 z-10 backdrop-blur border-b border-slate-800">
                                 <tr>{['TIMESTAMP','DEVICE_ID','CITY','BEVERAGE','TEMP','LATENCY','ERROR'].map(h=><th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">{h}</th>)}</tr>
                             </thead>
@@ -734,8 +754,8 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
 
             {/* Schema Modal */}
             {showSchemaModal && (
-                <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center backdrop-blur-md animate-in fade-in">
-                    <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-[600px] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+                <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center backdrop-blur-md animate-in fade-in p-4">
+                    <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
                         <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
                             <div><h3 className="text-white font-bold text-base flex items-center gap-2"><Code size={16} className="text-indigo-400"/> 数据库 Schema 定义</h3></div>
                             <button onClick={()=>setShowSchemaModal(false)} className="p-1 hover:bg-slate-800 rounded-full transition-colors"><X size={16} className="text-slate-400"/></button>
@@ -744,17 +764,19 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
                              <div className="space-y-6">
                                  <div>
                                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Table: device_logs</h4>
-                                     <table className="w-full text-left text-xs font-mono border-collapse border border-slate-800">
-                                         <thead className="bg-slate-900 text-slate-400">
-                                             <tr><th className="p-2 border border-slate-800">Column</th><th className="p-2 border border-slate-800">Type</th><th className="p-2 border border-slate-800">Description</th></tr>
-                                         </thead>
-                                         <tbody className="text-slate-300">
-                                             <tr><td className="p-2 border border-slate-800 text-emerald-400">id</td><td className="p-2 border border-slate-800">UUID</td><td className="p-2 border border-slate-800">Primary Key</td></tr>
-                                             <tr><td className="p-2 border border-slate-800 text-indigo-400">timestamp</td><td className="p-2 border border-slate-800">TIMESTAMP</td><td className="p-2 border border-slate-800">Event Time (Indexed)</td></tr>
-                                             <tr><td className="p-2 border border-slate-800">machine_id</td><td className="p-2 border border-slate-800">VARCHAR(50)</td><td className="p-2 border border-slate-800">Device Serial</td></tr>
-                                             <tr><td className="p-2 border border-slate-800">telemetry</td><td className="p-2 border border-slate-800">JSONB</td><td className="p-2 border border-slate-800">Raw sensor data</td></tr>
-                                         </tbody>
-                                     </table>
+                                     <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-xs font-mono border-collapse border border-slate-800 min-w-[400px]">
+                                            <thead className="bg-slate-900 text-slate-400">
+                                                <tr><th className="p-2 border border-slate-800">Column</th><th className="p-2 border border-slate-800">Type</th><th className="p-2 border border-slate-800">Description</th></tr>
+                                            </thead>
+                                            <tbody className="text-slate-300">
+                                                <tr><td className="p-2 border border-slate-800 text-emerald-400">id</td><td className="p-2 border border-slate-800">UUID</td><td className="p-2 border border-slate-800">Primary Key</td></tr>
+                                                <tr><td className="p-2 border border-slate-800 text-indigo-400">timestamp</td><td className="p-2 border border-slate-800">TIMESTAMP</td><td className="p-2 border border-slate-800">Event Time (Indexed)</td></tr>
+                                                <tr><td className="p-2 border border-slate-800">machine_id</td><td className="p-2 border border-slate-800">VARCHAR(50)</td><td className="p-2 border border-slate-800">Device Serial</td></tr>
+                                                <tr><td className="p-2 border border-slate-800">telemetry</td><td className="p-2 border border-slate-800">JSONB</td><td className="p-2 border border-slate-800">Raw sensor data</td></tr>
+                                            </tbody>
+                                        </table>
+                                     </div>
                                  </div>
                                  <div>
                                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">SQL Definition</h4>
