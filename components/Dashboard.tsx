@@ -1,9 +1,10 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Line, ComposedChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ReferenceDot, Treemap, ScatterChart, Scatter, ZAxis, ReferenceLine, ReferenceArea, Label, LabelList } from 'recharts';
 import { AggregatedStats, IoTRecord, MachineFleetStatus, MachineStatus, BeverageType, Gender, ModelType } from '../types';
 import { getFleetStatus } from '../services/dataGenerator';
 import { generateInsight } from '../services/geminiService';
-import { Activity, Wifi, Map as MapIcon, Zap, TrendingUp, Users, Coffee, Cpu, AlertTriangle, Radio, BarChart3, RotateCcw, MonitorSmartphone, ChevronDown, Target, Crown, Calendar, Filter, FileSpreadsheet, Download, X, Layers, Smartphone, Power, CheckCircle2, ArrowRight, Sparkles, AlertCircle, ArrowUpRight, ArrowDownRight, DollarSign, Percent, Loader2, MapPin, BrainCircuit, FileText, Share2, MoreHorizontal } from 'lucide-react';
+import { Activity, Wifi, Map as MapIcon, Zap, TrendingUp, Users, Coffee, Cpu, AlertTriangle, Radio, BarChart3, RotateCcw, MonitorSmartphone, ChevronDown, Target, Crown, Calendar, Filter, FileSpreadsheet, Download, X, Layers, Smartphone, Power, CheckCircle2, ArrowRight, Sparkles, AlertCircle, ArrowUpRight, ArrowDownRight, DollarSign, Percent, Loader2, MapPin, BrainCircuit, FileText, Share2, MoreHorizontal, Search, Terminal, Signal, Server, LocateFixed } from 'lucide-react';
 import * as L from 'leaflet';
 
 interface DashboardProps {
@@ -78,7 +79,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, data }) => {
       </div>
       
       <div className="flex-1 min-h-0 relative p-4 lg:overflow-hidden overflow-y-auto">
-        {viewMode === 'analytics' ? <AnalyticsView stats={stats} data={data} /> : <div className="h-full overflow-y-auto pr-1 pb-2 custom-scrollbar"><TelemetryView stats={stats} data={data} /></div>}
+        {viewMode === 'analytics' ? <AnalyticsView stats={stats} data={data} /> : <div className="lg:h-full h-auto pr-1 pb-2"><TelemetryView stats={stats} data={data} /></div>}
       </div>
     </div>
   );
@@ -607,156 +608,382 @@ const ContextualKPI = ({ label, value, trend, color, icon: Icon, data, target }:
     </div>
 );
 
-// --- Telemetry View (IoT Monitoring) ---
+// --- Telemetry View (IoT Monitoring - REDESIGNED) ---
 const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [activeDropdown, setActiveDropdown] = useState(false);
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
 
   const fleet = useMemo(() => getFleetStatus(data), [data]);
-  const visibleFleet = useMemo(() => selectedCity ? fleet.filter(m => m.city === selectedCity) : fleet, [fleet, selectedCity]);
-  const fleetStats = useMemo(() => {
-    const total = visibleFleet.length || 1;
-    const active = visibleFleet.filter(m => m.status === MachineStatus.ACTIVE).length;
-    const maint = visibleFleet.filter(m => m.status === MachineStatus.MAINTENANCE).length;
-    return { total: visibleFleet.length, active, maint, offline: visibleFleet.length - active - maint, activePct: ((active/total)*100).toFixed(1), maintPct: ((maint/total)*100).toFixed(1) };
-  }, [visibleFleet]);
+  
+  const filteredFleet = useMemo(() => {
+      let filtered = fleet;
+      if (selectedCity) filtered = filtered.filter(m => m.city === selectedCity);
+      if (filterStatus !== 'all') filtered = filtered.filter(m => filterStatus === 'issue' ? m.errorRate > 0 || m.status !== MachineStatus.ACTIVE : m.status.toLowerCase() === filterStatus);
+      if (searchTerm) filtered = filtered.filter(m => m.machineId.toLowerCase().includes(searchTerm.toLowerCase()) || m.address.toLowerCase().includes(searchTerm.toLowerCase()));
+      return filtered;
+  }, [fleet, selectedCity, filterStatus, searchTerm]);
 
+  const fleetStats = useMemo(() => {
+    const total = fleet.length || 1;
+    const active = fleet.filter(m => m.status === MachineStatus.ACTIVE).length;
+    const maint = fleet.filter(m => m.status === MachineStatus.MAINTENANCE).length;
+    const offline = total - active - maint;
+    return { 
+        total: fleet.length, 
+        active, 
+        maint, 
+        offline, 
+        activePct: ((active/total)*100).toFixed(1),
+        avgSignal: Math.round(fleet.reduce((acc, c) => acc + c.signalStrength, 0) / total),
+        errors: fleet.filter(m => m.errorRate > 0).length
+    };
+  }, [fleet]);
+
+  const selectedMachine = useMemo(() => fleet.find(m => m.machineId === selectedMachineId), [fleet, selectedMachineId]);
+
+  // Scroll to selected item in list
+  useEffect(() => {
+    if (selectedMachineId) {
+      if (window.innerWidth >= 1024) { // Only auto-scroll list on desktop to avoid hijacking mobile scroll
+          setTimeout(() => {
+            const element = document.getElementById(`row-${selectedMachineId}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+      }
+    }
+  }, [selectedMachineId]);
+
+  // Map Initialization & Updates
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (!mapInstanceRef.current) {
-        // Init Map with AutoNavi (GaoDe) Tiles for Chinese localization
         const map = L.map(mapContainerRef.current, { maxBounds: CHINA_BOUNDS, minZoom: 3, maxZoom: 18, attributionControl: false, zoomControl: false }).setView([35.8617, 104.1954], 4);
-        L.control.zoom({ position: 'topright' }).addTo(map);
-        // Switch to AutoNavi (High contrast style for visibility)
+        // Custom dark tile layer
         L.tileLayer('https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', { minZoom: 1, maxZoom: 19 }).addTo(map);
         mapInstanceRef.current = map;
         setTimeout(() => map.invalidateSize(), 100);
     }
     const map = mapInstanceRef.current;
     
-    // Manage Markers (Diffing)
-    const currentIds = new Set(visibleFleet.map(f => f.machineId));
+    // Manage Markers
+    const currentIds = new Set(filteredFleet.map(f => f.machineId));
     for (const [id, marker] of markersRef.current) { if (!currentIds.has(id)) { marker.remove(); markersRef.current.delete(id); } }
     
-    visibleFleet.forEach(device => {
+    filteredFleet.forEach(device => {
         let marker = markersRef.current.get(device.machineId);
         const isSelected = selectedMachineId === device.machineId;
         const color = device.status === MachineStatus.ACTIVE ? '#10b981' : device.status === MachineStatus.MAINTENANCE ? '#f59e0b' : '#f43f5e';
-        const size = isSelected ? 38 : (selectedCity ? 28 : 14);
+        const size = isSelected ? 32 : (selectedCity ? 24 : 12);
         
-        // Google Maps Style Pin SVG
-        const pinSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="drop-shadow-lg transition-transform duration-300 ${isSelected?'scale-110 z-[1000]':''}" style="overflow:visible;">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="${color}" stroke="#fff" stroke-width="1.5"></path>
-            <circle cx="12" cy="9" r="3" fill="#0f172a"/>
+        // Advanced Marker SVG
+        const pinSvg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="drop-shadow-lg transition-all duration-300" style="overflow:visible; opacity: ${isSelected ? 1 : 0.8}; transform: scale(${isSelected ? 1.2 : 1})">
+            ${isSelected ? `<circle cx="12" cy="12" r="12" fill="${color}" fill-opacity="0.2"><animate attributeName="r" from="12" to="20" dur="1.5s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.4" to="0" dur="1.5s" repeatCount="indefinite"/></circle>` : ''}
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="${color}" stroke="#020617" stroke-width="1.5"></path>
+            <circle cx="12" cy="9" r="3" fill="#020617"/>
         </svg>`;
         
-        const icon = L.divIcon({ className: '', html: pinSvg, iconSize: [size, size], iconAnchor: [size/2, size], popupAnchor: [0, -size] });
+        const icon = L.divIcon({ className: '', html: pinSvg, iconSize: [size, size], iconAnchor: [size/2, size] });
+
+        // Rich Popup Content
+        const popupHtml = `
+            <div class="p-3 min-w-[220px] bg-[#0f172a]">
+                <div class="flex justify-between items-start mb-2 pb-2 border-b border-slate-700/50">
+                    <span class="font-bold text-white text-xs font-mono tracking-tight">${device.machineId}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded border font-bold uppercase tracking-wider ${device.status === MachineStatus.ACTIVE ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : device.status === MachineStatus.MAINTENANCE ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}">${device.status}</span>
+                </div>
+                <div class="space-y-1 mb-3">
+                    <div class="text-[10px] text-slate-300 flex items-center gap-1.5"><div class="w-1 h-1 bg-indigo-500 rounded-full"></div>${CITY_TRANSLATION[device.city] || device.city}</div>
+                    <div class="text-[10px] text-slate-500 truncate font-mono">${device.address}</div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 bg-slate-900/50 p-2 rounded border border-slate-800">
+                    <div class="flex flex-col">
+                        <span class="text-[8px] text-slate-600 uppercase font-bold">Latency</span>
+                        <span class="text-[10px] font-mono text-cyan-400">${device.avgLatency}ms</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[8px] text-slate-600 uppercase font-bold">Signal</span>
+                        <span class="text-[10px] font-mono text-emerald-400">${device.signalStrength}</span>
+                    </div>
+                     <div class="flex flex-col">
+                        <span class="text-[8px] text-slate-600 uppercase font-bold">Sales</span>
+                        <span class="text-[10px] font-mono text-indigo-400">${device.dailyStats.totalSalesQty}</span>
+                    </div>
+                </div>
+            </div>
+        `;
 
         if (!marker) {
-            marker = L.marker([device.geo.lat, device.geo.lng], { icon, zIndexOffset: isSelected?1000:0 }).addTo(map);
-            const popupContent = `
-                <div class="font-sans text-xs min-w-[150px] bg-slate-900 text-slate-200 p-2 rounded shadow-xl border border-slate-700">
-                    <div class="flex justify-between items-center mb-1 pb-1 border-b border-slate-700">
-                        <span class="font-bold text-indigo-400">${device.machineId}</span>
-                        <span class="${device.status===MachineStatus.ACTIVE?'text-emerald-500':'text-rose-500'} font-bold text-[9px] uppercase px-1 border border-current rounded">${device.status}</span>
-                    </div>
-                    <div class="text-slate-400 space-y-0.5 mt-1">
-                        <div class="font-medium text-white truncate">${device.address}</div>
-                        <div class="flex justify-between"><span>Signal:</span> <span class="text-white">${device.signalStrength} dBm</span></div>
-                        <div class="flex justify-between"><span>Sales:</span> <span class="text-white">¥${device.dailyStats.totalRevenue}</span></div>
-                    </div>
-                </div>`;
-            marker.bindPopup(popupContent, { closeButton: false, className: 'custom-popup' });
+            marker = L.marker([device.geo.lat, device.geo.lng], { icon, zIndexOffset: isSelected?1000:0 })
+                .bindPopup(popupHtml, { closeButton: false, offset: [0, -15], maxWidth: 240 })
+                .addTo(map);
             marker.on('click', () => setSelectedMachineId(device.machineId));
             markersRef.current.set(device.machineId, marker);
         } else { 
             marker.setLatLng([device.geo.lat, device.geo.lng]); 
             marker.setIcon(icon); 
             marker.setZIndexOffset(isSelected?1000:0); 
+            marker.setPopupContent(popupHtml);
         }
-        if (isSelected && !marker.isPopupOpen()) marker.openPopup();
     });
-  }, [visibleFleet, selectedCity, selectedMachineId]);
+  }, [filteredFleet, selectedCity, selectedMachineId]);
 
-  // FlyTo Logic
+  // FlyTo Logic & Popup Sync
   useEffect(() => {
      if (selectedMachineId && mapInstanceRef.current && markersRef.current.get(selectedMachineId)) {
          const marker = markersRef.current.get(selectedMachineId)!;
-         mapInstanceRef.current.flyTo(marker.getLatLng(), 16, { duration: 1.2 });
-         document.getElementById(`row-${selectedMachineId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         mapInstanceRef.current.flyTo(marker.getLatLng(), 15, { duration: 0.8, easeLinearity: 0.25 });
+         marker.openPopup();
      } else if (mapInstanceRef.current && !selectedMachineId) {
-         mapInstanceRef.current.flyTo(selectedCity ? CITY_COORDS[selectedCity] : [35.8617, 104.1954], selectedCity ? 11 : 4, { duration: 1.2 });
+         if (selectedCity && CITY_COORDS[selectedCity]) {
+             mapInstanceRef.current.flyTo(CITY_COORDS[selectedCity], 11, { duration: 0.8 });
+         } else if (!selectedCity) {
+             mapInstanceRef.current.flyTo([35.8617, 104.1954], 4, { duration: 1.0 });
+             mapInstanceRef.current.closePopup();
+         }
      }
   }, [selectedMachineId, selectedCity]);
 
+  // Simulate Diagnostics Data
+  const diagData = useMemo(() => {
+     if (!selectedMachineId) return [];
+     // Generate fake history
+     return Array.from({length: 20}, (_, i) => ({
+         time: `-${20-i}s`,
+         latency: 20 + Math.random() * 40 + (Math.random() > 0.9 ? 100 : 0),
+         cpu: 30 + Math.random() * 40
+     }));
+  }, [selectedMachineId]);
+
   return (
-    <div className="flex flex-col h-full gap-4 pb-2">
-       {/* Telemetry Stats Bar */}
-       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 shrink-0 h-auto md:h-[80px]">
-          <div className="col-span-2 md:col-span-1 bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-sm border-l-4 border-l-indigo-500 flex flex-col justify-center">
-             <div className="flex justify-between items-center mb-1"><span className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">在线状态</span><span className="text-lg font-bold text-slate-200 font-mono">{fleetStats.total} <span className="text-xs text-slate-500 font-sans font-normal">台</span></span></div>
-             <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-slate-800 mb-1"><div style={{width: `${fleetStats.activePct}%`}} className="bg-emerald-500"></div><div style={{width: `${fleetStats.maintPct}%`}} className="bg-amber-500"></div><div className="bg-red-500 flex-1"></div></div>
-             <div className="flex justify-between text-[9px] text-slate-400 font-mono uppercase"><span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>{fleetStats.activePct}%</span><span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>{fleetStats.maintPct}%</span></div>
-          </div>
-          <StatusWidgetCompact label="平均延迟" value={`${Math.round(stats.avgLatency)}ms`} icon={<Activity size={14} className="text-cyan-400"/>} color="cyan" />
-          <StatusWidgetCompact label="数据错误率" value={`${(stats.errorRate * 100).toFixed(2)}%`} icon={<AlertTriangle size={14} className="text-rose-400"/>} color="rose" />
-          <StatusWidgetCompact label="信号强度" value="-42dBm" icon={<Radio size={14} className="text-emerald-400"/>} color="emerald" />
-          <StatusWidgetCompact label="CPU 负载" value="42%" icon={<Cpu size={14} className="text-amber-400"/>} color="amber" />
+    <div className="flex flex-col lg:h-full h-auto gap-4 pb-2 text-slate-200">
+       {/* 1. IoT KPI Hardware Monitors */}
+       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 shrink-0">
+          <IoTStatCard label="设备在线率" value={`${fleetStats.activePct}%`} sub={`(${fleetStats.active}/${fleetStats.total})`} icon={Activity} color="emerald" type="bar" percentage={parseFloat(fleetStats.activePct)} />
+          <IoTStatCard label="全网平均延迟" value={`${Math.round(stats.avgLatency)}ms`} sub="Real-time" icon={Zap} color="cyan" type="graph" />
+          <IoTStatCard label="异常设备数" value={fleetStats.errors} sub="Critical Alerts" icon={AlertTriangle} color={fleetStats.errors > 0 ? "rose" : "slate"} type="alert" />
+          <IoTStatCard label="平均信号强度" value={`${fleetStats.avgSignal} dBm`} sub="4G/5G/LoRa" icon={Signal} color="indigo" type="signal" signal={Math.abs(fleetStats.avgSignal)} />
+          <IoTStatCard label="CPU 负载峰值" value="78%" sub="Edge Compute" icon={Cpu} color="amber" type="gauge" percentage={78} />
        </div>
 
-       {/* Map & List Split View (Fixed Viewport) */}
-       <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden">
-           {/* Map Container - Top 45% */}
-           <div className="flex-none h-[45%] bg-slate-100 rounded-xl shadow-lg relative overflow-hidden group z-0 border border-slate-300">
-                 <div className="absolute top-4 left-4 z-[2000] flex gap-2">
+       {/* 2. Command Center Grid */}
+       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-0 lg:overflow-hidden overflow-visible">
+           
+           {/* MAP CONSOLE (Span 8) */}
+           <div className="lg:col-span-8 flex flex-col gap-0 bg-[#0F172A] border border-slate-800 rounded-xl overflow-hidden relative shadow-2xl group min-h-[450px] lg:min-h-0">
+               {/* Map Toolbar Overlay */}
+               <div className="absolute top-4 left-4 z-[1000] flex gap-2 items-center">
                     <div className="relative">
-                        <button onClick={() => setActiveDropdown(!activeDropdown)} className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg shadow-xl text-xs text-slate-200 hover:bg-slate-700 font-medium transition-colors"><MapIcon size={14} className="text-emerald-400"/>{selectedCity || "全球视图"} <ChevronDown size={12} /></button>
-                        {activeDropdown && <div className="absolute left-0 top-full mt-2 w-40 bg-slate-800/95 border border-slate-700 rounded-lg shadow-2xl overflow-hidden py-1 z-[2001] backdrop-blur">{[null, ...Object.keys(CITY_COORDS)].map(c => <div key={c||'all'} className="px-4 py-2 text-xs text-slate-300 hover:bg-slate-700 cursor-pointer" onClick={() => { setSelectedCity(c as any); setActiveDropdown(false); setSelectedMachineId(null); }}>{c || "全球视图"}</div>)}</div>}
+                        <button onClick={() => setActiveDropdown(!activeDropdown)} className="flex items-center gap-2 px-3 py-2 bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-lg shadow-xl text-xs font-bold text-slate-200 hover:bg-slate-800 transition-all hover:border-indigo-500/50">
+                            <MapPin size={14} className="text-emerald-400"/>
+                            {selectedCity ? CITY_TRANSLATION[selectedCity] || selectedCity : "全球视图 (Global)"} 
+                            <ChevronDown size={12} className={`transition-transform ${activeDropdown?'rotate-180':''}`}/>
+                        </button>
+                        {activeDropdown && (
+                            <div className="absolute left-0 top-full mt-2 w-48 bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl overflow-hidden py-1 z-[2001] backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
+                                <div className="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800">Select Region</div>
+                                <div onClick={() => { setSelectedCity(null); setActiveDropdown(false); setSelectedMachineId(null); }} className="px-4 py-2 text-xs text-white hover:bg-indigo-600 cursor-pointer flex items-center justify-between group">
+                                    <span>全球视图</span>
+                                    {selectedCity === null && <CheckCircle2 size={12} className="text-emerald-400"/>}
+                                </div>
+                                {Object.keys(CITY_COORDS).map(c => (
+                                    <div key={c} onClick={() => { setSelectedCity(c); setActiveDropdown(false); setSelectedMachineId(null); }} className="px-4 py-2 text-xs text-slate-300 hover:bg-indigo-600 hover:text-white cursor-pointer flex items-center justify-between">
+                                        <span>{CITY_TRANSLATION[c]}</span>
+                                        {selectedCity === c && <CheckCircle2 size={12} className="text-emerald-400"/>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    {selectedMachineId && <button onClick={() => setSelectedMachineId(null)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg shadow-xl text-xs flex items-center gap-1 hover:bg-indigo-500"><RotateCcw size={12} /> 重置视角</button>}
-                 </div>
-                 <div id="map" ref={mapContainerRef} className="w-full h-full"></div>
+                    {/* Status Filter */}
+                    <div className="flex bg-slate-900/80 backdrop-blur-md rounded-lg p-0.5 border border-slate-700/50 shadow-xl">
+                        {[{id:'all',l:'All'},{id:'active',l:'Active'},{id:'offline',l:'Offline'},{id:'issue',l:'Issues'}].map(f => (
+                            <button key={f.id} onClick={()=>setFilterStatus(f.id)} className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-colors ${filterStatus===f.id ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}>{f.l}</button>
+                        ))}
+                    </div>
+               </div>
+
+               {/* Map Reset Control */}
+               <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+                   <button onClick={() => { setSelectedMachineId(null); setSelectedCity(null); }} className="p-2 bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-lg text-slate-300 hover:text-white hover:bg-indigo-600 transition-all shadow-xl" title="Reset View">
+                       <LocateFixed size={18}/>
+                   </button>
+               </div>
+
+               {/* Legend Overlay */}
+               <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-lg p-2 flex gap-4 shadow-xl text-[10px] font-mono">
+                   <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_5px_#10b981]"></div> Active</div>
+                   <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#f59e0b]"></div> Maint</div>
+                   <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#f43f5e]"></div> Alert</div>
+               </div>
+
+               {/* Map Container */}
+               <div id="map" ref={mapContainerRef} className="w-full h-full bg-[#0B1120] z-0"></div>
            </div>
 
-           {/* List Container - Bottom Rest */}
-           <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0">
-                 <div className="p-2 border-b border-slate-800 bg-slate-900/90 backdrop-blur flex justify-between items-center shrink-0"><h3 className="text-slate-100 font-semibold flex items-center gap-2 text-sm"><MonitorSmartphone size={16} className="text-cyan-400"/> 设备运行监控列表</h3><div className="text-xs text-slate-500 font-mono tracking-tight">Viewing {visibleFleet.length} Devices</div></div>
-                 <div className="flex-1 overflow-auto bg-[#050911] custom-scrollbar">
-                    <table className="w-full text-left text-[11px] font-mono border-collapse relative min-w-[600px]">
-                       <thead className="bg-slate-800/90 text-slate-400 sticky top-0 z-10 backdrop-blur-md shadow-sm">
-                          <tr>{['机器编号','地理位置','状态','当日销售','IoT 接口','信号','延迟','错误率','负载',''].map(h=><th key={h} className="px-4 py-2 font-semibold border-b border-slate-700 text-slate-400 whitespace-nowrap">{h}</th>)}</tr>
-                       </thead>
-                       <tbody className="divide-y divide-slate-800/50 text-slate-300">
-                          {visibleFleet.map(row => (
-                             <tr key={row.machineId} id={`row-${row.machineId}`} onClick={() => setSelectedMachineId(row.machineId)} className={`cursor-pointer transition-all ${selectedMachineId === row.machineId ? 'bg-indigo-900/20 border-l-4 border-l-indigo-500' : 'hover:bg-slate-800/40 border-l-4 border-l-transparent'}`}>
-                                <td className="px-4 py-2 font-bold text-indigo-300">{row.machineId}</td>
-                                <td className="px-4 py-2"><div className="flex flex-col"><span className="text-slate-200 font-bold">{row.city}</span><span className="text-[10px] text-slate-500 truncate max-w-[150px]">{row.address.replace(`${row.city}市`, '')}</span><span className="text-[9px] text-slate-600 font-mono">{row.geo.lat.toFixed(4)}, {row.geo.lng.toFixed(4)}</span></div></td>
-                                <td className="px-4 py-2"><span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase font-bold ${row.status===MachineStatus.ACTIVE?'border-emerald-500/30 text-emerald-400 bg-emerald-500/10':row.status===MachineStatus.MAINTENANCE?'border-amber-500/30 text-amber-400 bg-amber-500/10':'border-rose-500/30 text-rose-400 bg-rose-500/10'}`}>{row.status}</span></td>
-                                <td className="px-4 py-2 font-mono">¥{row.dailyStats.totalRevenue.toLocaleString()}</td>
-                                <td className="px-4 py-2"><span className="text-slate-400">{row.iotInterface}</span></td>
-                                <td className="px-4 py-2 text-slate-400">{row.signalStrength}</td>
-                                <td className={`px-4 py-2 ${row.avgLatency>100?'text-amber-400':'text-slate-300'}`}>{row.avgLatency}ms</td>
-                                <td className={`px-4 py-2 ${row.errorRate>0.05?'text-rose-400':'text-slate-300'}`}>{(row.errorRate*100).toFixed(1)}%</td>
-                                <td className="px-4 py-2"><div className="w-12 h-1 bg-slate-700 rounded-full overflow-hidden"><div className={`h-full ${row.cpuLoad>80?'bg-rose-500':'bg-emerald-500'}`} style={{width:`${row.cpuLoad}%`}}></div></div></td>
-                                <td className="px-4 py-2 text-right"><Target size={14} className="text-indigo-500/50 group-hover:text-indigo-400"/></td>
-                             </tr>
-                          ))}
-                       </tbody>
-                    </table>
-                 </div>
+           {/* SIDEBAR INTELLIGENCE PANEL (Span 4) */}
+           <div className="lg:col-span-4 flex flex-col gap-4 min-h-0">
+               
+               {/* 1. Device Fleet List */}
+               <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl flex flex-col shadow-xl overflow-hidden min-h-[300px]">
+                   <div className="p-3 border-b border-slate-800 bg-slate-950 flex flex-col gap-2 shrink-0">
+                       <div className="flex justify-between items-center">
+                           <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2"><Server size={14} className="text-indigo-400"/> 设备列表 (Fleet)</h3>
+                           <span className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">{filteredFleet.length} Units</span>
+                       </div>
+                       <div className="relative">
+                           <Search size={12} className="absolute left-2.5 top-2 text-slate-500"/>
+                           <input type="text" value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder="Search ID or Address..." className="w-full bg-slate-900 border border-slate-700 rounded pl-8 pr-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-600 font-mono" />
+                       </div>
+                   </div>
+                   
+                   <div className="flex-1 overflow-y-auto custom-scrollbar p-1 space-y-0.5 bg-[#050911]">
+                       {filteredFleet.map(m => (
+                           <div key={m.machineId} id={`row-${m.machineId}`} onClick={() => {
+                               setSelectedMachineId(m.machineId);
+                               // On mobile, scroll up to map when selecting from list
+                               if (window.innerWidth < 1024 && mapContainerRef.current) {
+                                   mapContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                               }
+                           }} className={`p-2 rounded border cursor-pointer transition-all flex items-center justify-between group ${selectedMachineId === m.machineId ? 'bg-indigo-600/20 border-indigo-400 ring-1 ring-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.15)]' : 'bg-transparent border-transparent hover:bg-slate-800 hover:border-slate-700'}`}>
+                               <div className="flex items-center gap-3">
+                                   <div className={`w-1.5 h-8 rounded-full ${m.status===MachineStatus.ACTIVE?'bg-emerald-500':m.status===MachineStatus.MAINTENANCE?'bg-amber-500':'bg-rose-500'}`}></div>
+                                   <div>
+                                       <div className={`text-xs font-bold font-mono ${selectedMachineId===m.machineId?'text-white':'text-slate-400 group-hover:text-slate-200'}`}>{m.machineId}</div>
+                                       <div className="text-[10px] text-slate-600 truncate max-w-[120px]">{m.address.split('市')[1] || m.address}</div>
+                                   </div>
+                               </div>
+                               <div className="text-right">
+                                   <div className={`text-xs font-mono font-bold ${m.avgLatency>100?'text-amber-400':'text-slate-500'}`}>{m.avgLatency}ms</div>
+                                   <div className="text-[9px] text-slate-600">{m.iotInterface}</div>
+                               </div>
+                           </div>
+                       ))}
+                       {filteredFleet.length === 0 && <div className="p-4 text-center text-xs text-slate-600 italic">No devices found.</div>}
+                   </div>
+               </div>
+
+               {/* 2. Diagnostic Terminal */}
+               <div className="h-[280px] shrink-0 bg-[#020617] border border-slate-800 rounded-xl flex flex-col shadow-2xl relative overflow-hidden">
+                   <div className="p-3 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center shrink-0">
+                       <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2"><Terminal size={14} className="text-emerald-400"/> 诊断终端 (Diagnostics)</h3>
+                       {selectedMachineId && <span className="text-[10px] font-mono text-indigo-400 font-bold px-2 py-0.5 bg-indigo-500/10 rounded border border-indigo-500/20">CONNECTED</span>}
+                   </div>
+
+                   {selectedMachine ? (
+                       <div className="flex-1 p-4 flex flex-col gap-4 relative z-10 animate-in fade-in slide-in-from-bottom-4">
+                           {/* Header Info */}
+                           <div className="flex justify-between items-start">
+                               <div>
+                                   <div className="text-lg font-bold text-white font-mono tracking-tight">{selectedMachine.machineId}</div>
+                                   <div className="text-[10px] text-slate-500 font-mono mt-0.5 flex gap-2">
+                                       <span>FW: v2.1.0</span>
+                                       <span>IP: 10.0.2.{Math.floor(Math.random()*255)}</span>
+                                   </div>
+                               </div>
+                               <div className="text-right">
+                                   <div className={`text-sm font-bold ${selectedMachine.status===MachineStatus.ACTIVE?'text-emerald-400':selectedMachine.status===MachineStatus.MAINTENANCE?'text-amber-400':'text-rose-400'}`}>{selectedMachine.status}</div>
+                                   <div className="text-[9px] text-slate-500 uppercase tracking-wider">System Status</div>
+                               </div>
+                           </div>
+
+                           {/* Real-time Graphs */}
+                           <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+                               <div className="bg-slate-900/50 border border-slate-800 rounded p-2 flex flex-col relative overflow-hidden">
+                                   <div className="text-[9px] text-slate-500 font-bold uppercase mb-1 z-10 relative">Latency (ms)</div>
+                                   <div className="absolute top-2 right-2 text-[10px] font-mono text-cyan-400 font-bold z-10">{selectedMachine.avgLatency}</div>
+                                   <ResponsiveContainer width="100%" height="100%">
+                                       <AreaChart data={diagData}>
+                                           <defs><linearGradient id="colorLat" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#06b6d4" stopOpacity={0.4}/><stop offset="100%" stopColor="#06b6d4" stopOpacity={0}/></linearGradient></defs>
+                                           <Area type="monotone" dataKey="latency" stroke="#06b6d4" strokeWidth={2} fill="url(#colorLat)" isAnimationActive={false} />
+                                       </AreaChart>
+                                   </ResponsiveContainer>
+                               </div>
+                               <div className="bg-slate-900/50 border border-slate-800 rounded p-2 flex flex-col relative overflow-hidden">
+                                   <div className="text-[9px] text-slate-500 font-bold uppercase mb-1 z-10 relative">CPU Load (%)</div>
+                                   <div className="absolute top-2 right-2 text-[10px] font-mono text-amber-400 font-bold z-10">{selectedMachine.cpuLoad}%</div>
+                                   <ResponsiveContainer width="100%" height="100%">
+                                       <AreaChart data={diagData}>
+                                           <defs><linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity={0.4}/><stop offset="100%" stopColor="#f59e0b" stopOpacity={0}/></linearGradient></defs>
+                                           <Area type="monotone" dataKey="cpu" stroke="#f59e0b" strokeWidth={2} fill="url(#colorCpu)" isAnimationActive={false} />
+                                       </AreaChart>
+                                   </ResponsiveContainer>
+                               </div>
+                           </div>
+                           
+                           {/* Quick Actions */}
+                           <div className="grid grid-cols-2 gap-2 mt-auto">
+                               <button className="py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded uppercase tracking-wider transition-all">Reboot</button>
+                               <button className="py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded uppercase tracking-wider transition-all border border-slate-700">Logs</button>
+                           </div>
+                       </div>
+                   ) : (
+                       <div className="flex-1 p-4 flex flex-col items-center justify-center text-slate-600 font-mono text-xs gap-3">
+                           <div className="w-12 h-12 rounded-full border border-slate-800 bg-slate-900 flex items-center justify-center animate-pulse"><Signal size={20}/></div>
+                           <span>Waiting for device selection...</span>
+                           <div className="w-full h-24 overflow-hidden relative opacity-50">
+                               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/10 to-[#020617] z-10"></div>
+                               <div className="space-y-1 text-[9px] text-emerald-900/60">
+                                   {Array.from({length:10}).map((_,i)=><div key={i}>[SYSTEM] Listening on port 808{i}... OK</div>)}
+                               </div>
+                           </div>
+                       </div>
+                   )}
+               </div>
            </div>
        </div>
     </div>
   );
 };
 
-const StatusWidgetCompact = ({ label, value, icon, color }: any) => (
-   <div className={`bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm flex justify-between items-center border-l-4 h-full min-h-[70px] ${color==='cyan'?'border-l-cyan-500':color==='rose'?'border-l-rose-500':color==='emerald'?'border-l-emerald-500':'border-l-amber-500'}`}>
-      <div><p className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">{label}</p><h4 className="text-lg font-bold text-slate-200 font-mono mt-0.5">{value}</h4></div>
-      <div className="opacity-80 p-2 rounded-full bg-slate-800/50">{icon}</div>
-   </div>
-);
+const IoTStatCard = ({ label, value, sub, icon: Icon, color, type, percentage, signal }: any) => {
+    return (
+        <div className={`bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-lg relative overflow-hidden group hover:border-${color}-500/30 transition-all min-h-[90px] flex flex-col justify-between`}>
+             <div className="flex justify-between items-start mb-1">
+                 <div className="flex items-center gap-2">
+                     <Icon size={14} className={`text-${color}-400`}/>
+                     <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
+                 </div>
+                 {type === 'alert' && value > 0 && <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>}
+             </div>
+             
+             <div className="flex justify-between items-end">
+                 <div>
+                     <div className="text-xl font-mono font-bold text-slate-200 tracking-tighter leading-none">{value}</div>
+                     <div className="text-[9px] text-slate-500 mt-1 font-mono">{sub}</div>
+                 </div>
+                 
+                 {/* Visualizations */}
+                 {type === 'bar' && (
+                     <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden flex self-center mt-2">
+                         <div className={`h-full bg-${color}-500`} style={{width: `${percentage}%`}}></div>
+                     </div>
+                 )}
+                 {type === 'signal' && (
+                     <div className="flex gap-0.5 items-end h-4">
+                         {[1,2,3,4].map(i => <div key={i} className={`w-1 rounded-sm ${i <= (signal > 90 ? 1 : signal > 70 ? 2 : signal > 50 ? 3 : 4) ? `bg-${color}-500` : 'bg-slate-800'}`} style={{height: `${i*25}%`}}></div>)}
+                     </div>
+                 )}
+                 {type === 'gauge' && (
+                     <div className="relative w-8 h-4 overflow-hidden mt-1">
+                         <div className="absolute top-0 left-0 w-8 h-8 rounded-full border-4 border-slate-800"></div>
+                         <div className="absolute top-0 left-0 w-8 h-8 rounded-full border-4 border-transparent border-t-amber-500 border-r-amber-500" style={{transform: 'rotate(-45deg)'}}></div>
+                     </div>
+                 )}
+                 {type === 'graph' && (
+                     <div className="flex gap-0.5 items-end h-4 opacity-50">
+                         {Array.from({length:8}).map((_,i)=><div key={i} className={`w-1 bg-${color}-400 rounded-sm`} style={{height: `${Math.random()*100}%`}}></div>)}
+                     </div>
+                 )}
+             </div>
+        </div>
+    )
+}

@@ -207,7 +207,13 @@ const App = () => {
         newPackets.push(generateSingleRecord(Date.now() + i, true));
     }
     setTimeout(() => {
-        dataRef.current = [...dataRef.current, ...newPackets];
+        // Prevent memory leak by capping the data reference at 20,000 records
+        const MAX_STORED_RECORDS = 20000;
+        const updatedStream = [...dataRef.current, ...newPackets];
+        dataRef.current = updatedStream.length > MAX_STORED_RECORDS 
+            ? updatedStream.slice(-MAX_STORED_RECORDS) 
+            : updatedStream;
+            
         const uiData = dataRef.current.slice(-5000); 
         setData(uiData);
         setStats(prev => {

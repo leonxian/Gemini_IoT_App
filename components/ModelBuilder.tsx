@@ -59,7 +59,7 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-4 animate-in fade-in duration-500 overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-full gap-4 animate-in fade-in duration-500 lg:overflow-hidden overflow-y-auto">
       {/* Sidebar - Models List */}
       <div className="w-full lg:w-[240px] flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl shrink-0 lg:h-full max-h-[200px] lg:max-h-full">
         <div className="p-4 border-b border-slate-800 sticky top-0 bg-slate-900 z-10"><h3 className="text-slate-200 font-bold flex items-center gap-2 text-sm"><Database size={16} className="text-indigo-400"/> 模型算法库</h3></div>
@@ -76,15 +76,15 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl h-[600px] lg:h-full">
          {/* Top Tabs */}
-         <div className="flex border-b border-slate-800 bg-slate-950/30 overflow-x-auto no-scrollbar">
+         <div className="flex border-b border-slate-800 bg-slate-950/30 overflow-x-auto no-scrollbar shrink-0">
              {[{id:'overview',l:'模型概览',i:Eye},{id:'train',l:'训练与调优',i:Sliders},{id:'versions',l:'版本管理与部署',i:GitBranch},{id:'inference',l:'在线推理演示',i:PlayCircle}].map(t => (
                  <button key={t.id} onClick={() => setActiveTab(t.id as any)} disabled={isTraining && t.id!=='train'} className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-r border-slate-800/50 transition-colors whitespace-nowrap px-4 ${activeTab === t.id ? 'bg-indigo-600/10 text-indigo-400 border-b-2 border-b-indigo-500' : 'text-slate-500 hover:text-slate-300'}`}><t.i size={14}/> {t.l}</button>
              ))}
          </div>
 
-         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+         <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
              {/* Left Content Area */}
-             <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-slate-900 p-4 lg:p-6 h-full flex flex-col">
+             <div className="flex-1 lg:overflow-y-auto custom-scrollbar relative bg-slate-900 p-4 lg:p-6 h-auto lg:h-full flex flex-col">
                  {activeTab === 'overview' && (
                      <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto text-center p-4">
                          <div className="p-6 bg-slate-800/50 rounded-full mb-6 ring-4 ring-slate-800">{AVAILABLE_MODELS.find(m=>m.id===selectedModel)?.icon}</div>
@@ -94,7 +94,7 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
                      </div>
                  )}
                  {activeTab === 'train' && (
-                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full overflow-y-auto lg:overflow-hidden">
+                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-full lg:overflow-hidden">
                          <div className="lg:col-span-4 flex flex-col gap-4 lg:border-r border-slate-800 pr-0 lg:pr-6 h-auto lg:h-full lg:overflow-hidden shrink-0">
                              <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar space-y-4">
                                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Settings size={14}/> 超参数配置 (Hyperparameters)</h3>
@@ -110,7 +110,7 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
                                  <button onClick={isTraining ? () => abortControllerRef.current?.abort() : startTraining} className={`w-full py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 ${isTraining ? 'bg-rose-900/20 text-rose-400 border border-rose-500/50' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'}`}>{isTraining ? '停止训练' : activeStep === 5 ? '重新训练模型' : '开始训练模型'}</button>
                              </div>
                          </div>
-                         <div className="lg:col-span-8 flex flex-col gap-4 h-full overflow-hidden min-h-[400px]">
+                         <div className="lg:col-span-8 flex flex-col gap-4 h-auto lg:h-full lg:overflow-hidden min-h-[400px]">
                              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center relative shrink-0 gap-4 sm:gap-0 overflow-hidden">
                                  <div className="w-full sm:w-auto flex justify-between gap-2 overflow-x-auto no-scrollbar w-full">
                                      {['环境初始化','算法评估 1','算法评估 2','算法评估 3','最优模型验证'].map((s,i)=><div key={s} className={`z-10 flex flex-col items-center gap-1 min-w-[60px] ${activeStep>=i?'text-indigo-400':'text-slate-700'}`}><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold bg-slate-900 ${activeStep>=i?'border-indigo-500':'border-slate-800'}`}>{i+1}</div><span className="text-[9px] uppercase font-bold text-center">{s.split(' ')[0]}</span></div>)}
@@ -173,7 +173,7 @@ export const ModelBuilder: React.FC<ModelBuilderProps> = ({ stats, data, lifecyc
 
              {/* Right Panel (Details) */}
              {(activeTab==='overview'||activeTab==='train') && (
-                 <div className="w-full lg:w-[300px] lg:border-l border-t lg:border-t-0 border-slate-800 bg-slate-950/30 flex flex-col p-4 gap-4 h-auto lg:h-full lg:overflow-y-auto">
+                 <div className="w-full lg:w-[300px] lg:border-l border-t lg:border-t-0 border-slate-800 bg-slate-950/30 flex flex-col p-4 gap-4 h-auto lg:h-full lg:overflow-y-auto shrink-0">
                      {activeTab==='train' && lastResult && (
                          <div className="bg-slate-900 border border-emerald-500/30 rounded-xl p-4 shadow-lg animate-in slide-in-from-right flex flex-col gap-3 shrink-0">
                              <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2"><CheckCircle size={12}/> 训练成功完成</div>
