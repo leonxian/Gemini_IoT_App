@@ -1,9 +1,10 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Line, ComposedChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ReferenceDot, Treemap, ScatterChart, Scatter, ZAxis, ReferenceLine, ReferenceArea, Label } from 'recharts';
-import { AggregatedStats, IoTRecord, MachineFleetStatus, MachineStatus, BeverageType, Gender } from '../types';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Line, ComposedChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ReferenceDot, Treemap, ScatterChart, Scatter, ZAxis, ReferenceLine, ReferenceArea, Label, LabelList } from 'recharts';
+import { AggregatedStats, IoTRecord, MachineFleetStatus, MachineStatus, BeverageType, Gender, ModelType } from '../types';
 import { getFleetStatus } from '../services/dataGenerator';
-import { Activity, Wifi, Map as MapIcon, Zap, TrendingUp, Users, Coffee, Cpu, AlertTriangle, Radio, BarChart3, RotateCcw, MonitorSmartphone, ChevronDown, Target, Crown, Calendar, Filter, FileSpreadsheet, Download, X, Layers, Smartphone, Power, CheckCircle2, ArrowRight, Sparkles, AlertCircle, ArrowUpRight, ArrowDownRight, DollarSign, Percent, Loader2, MapPin, BrainCircuit, FileText } from 'lucide-react';
+import { generateInsight } from '../services/geminiService';
+import { Activity, Wifi, Map as MapIcon, Zap, TrendingUp, Users, Coffee, Cpu, AlertTriangle, Radio, BarChart3, RotateCcw, MonitorSmartphone, ChevronDown, Target, Crown, Calendar, Filter, FileSpreadsheet, Download, X, Layers, Smartphone, Power, CheckCircle2, ArrowRight, Sparkles, AlertCircle, ArrowUpRight, ArrowDownRight, DollarSign, Percent, Loader2, MapPin, BrainCircuit, FileText, Share2, MoreHorizontal } from 'lucide-react';
 import * as L from 'leaflet';
 
 interface DashboardProps {
@@ -33,11 +34,14 @@ const DEFAULT_PRODUCT_COLOR = '#64748b'; // Slate
 
 const CITY_COORDS: Record<string, [number, number]> = {
     'Shanghai': [31.2304, 121.4737], 'Beijing': [39.9042, 116.4074], 'Shenzhen': [22.5431, 114.0579],
-    'Guangzhou': [23.1291, 113.2644], 'Chengdu': [30.5728, 104.0668], 'Hangzhou': [30.2741, 120.1551]
+    'Guangzhou': [23.1291, 113.2644], 'Chengdu': [30.5728, 104.0668], 'Hangzhou': [30.2741, 120.1551],
+    'Wuhan': [30.5928, 114.3055], 'Xian': [34.3416, 108.9398], 'Chongqing': [29.5630, 106.5516],
+    'Nanjing': [32.0603, 118.7969]
 };
 const CITY_TRANSLATION: Record<string, string> = {
     'Shanghai': '上海', 'Beijing': '北京', 'Shenzhen': '深圳',
-    'Guangzhou': '广州', 'Chengdu': '成都', 'Hangzhou': '杭州'
+    'Guangzhou': '广州', 'Chengdu': '成都', 'Hangzhou': '杭州',
+    'Wuhan': '武汉', 'Xian': '西安', 'Chongqing': '重庆', 'Nanjing': '南京'
 };
 const CHINA_BOUNDS: L.LatLngBoundsExpression = [[10, 70], [55, 140]];
 
@@ -47,13 +51,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, data }) => {
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-700 overflow-hidden bg-[#020617]">
       {/* Header Controls - Floating HUD Style */}
-      <div className="flex justify-between items-center px-6 py-2 shrink-0 z-[2000] relative border-b border-white/5 bg-[#0B1120]/80 backdrop-blur-md">
+      <div className="flex justify-between items-center px-4 py-3 shrink-0 z-[2000] relative border-b border-white/5 bg-[#0B1120]/80 backdrop-blur-md h-14">
          <div className="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700/50 shadow-inner">
             {['analytics', 'telemetry'].map((mode) => (
                 <button 
                    key={mode}
                    onClick={() => setViewMode(mode as any)}
-                   className={`px-6 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center gap-2 tracking-wide uppercase ${
+                   className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center gap-2 tracking-wide uppercase ${
                       viewMode === mode ? (mode === 'analytics' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20') : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                    }`}
                 >
@@ -62,15 +66,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, data }) => {
                 </button>
             ))}
          </div>
-         <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900/50 rounded-full border border-slate-800/50">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-[pulse_2s_infinite] shadow-[0_0_10px_#10b981]"></div>
-                <span className="text-[10px] font-mono text-emerald-400 tracking-wider">SYSTEM ONLINE</span>
+         <div className="flex items-center gap-6">
+             <div className="hidden md:flex items-center gap-4 text-[10px] text-slate-500 font-mono">
+                 <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>数据流: 实时</span>
+                 <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>网关: 已连接</span>
+             </div>
+             <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-[pulse_2s_infinite]"></div>
+                <span className="text-[10px] font-bold text-emerald-400 tracking-wider">系统在线</span>
             </div>
          </div>
       </div>
       
-      <div className="flex-1 min-h-0 relative p-4">
+      <div className="flex-1 min-h-0 relative p-4 overflow-hidden">
         {viewMode === 'analytics' ? <AnalyticsView stats={stats} data={data} /> : <div className="h-full overflow-y-auto pr-1 pb-2 custom-scrollbar"><TelemetryView stats={stats} data={data} /></div>}
       </div>
     </div>
@@ -81,6 +89,8 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
   const [showFullReport, setShowFullReport] = useState(false);
   const [timeRange, setTimeRange] = useState<'Day'|'Week'|'Month'>('Month');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [showAIReportModal, setShowAIReportModal] = useState(false);
+  const [aiReportContent, setAiReportContent] = useState('');
 
   // --- STRICT DATA FILTERING ---
   const filteredData = useMemo(() => {
@@ -102,7 +112,7 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
       return data.filter(r => r.timestamp >= startMs);
   }, [data, timeRange]);
 
-  // --- Dynamic Data for Charts ---
+  // --- Dynamic Data for Charts (STRICT CALENDAR ALIGNMENT & DETERMINISTIC PREDICTION) ---
   const revenueData = useMemo(() => {
       const now = new Date();
       let buckets: { label: string, revenue: number, count: number, isFuture: boolean }[] = [];
@@ -192,15 +202,16 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
 
   }, [timeRange, filteredData]); 
 
-  // KPI Calculation
+  // KPI Calculation based on filtered Data
   const kpiStats = useMemo(() => {
-      const totalRev = filteredData.reduce((acc, r) => acc + (r.quantity * 4.5 * 10), 0);
+      const totalRev = filteredData.reduce((acc, r) => acc + (r.quantity * 4.5 * 10), 0); // Simulated price
       const totalBrews = filteredData.length;
       const dau = new Set(filteredData.map(d => d.userId)).size;
       const arpu = dau > 0 ? totalRev / dau : 0;
       
+      // Deterministic sparkline seed based on timeRange
       const seedVal = timeRange === 'Day' ? 10 : timeRange === 'Week' ? 50 : 100;
-      const sparklineData = Array.from({length: 10}, (_, i) => ({ val: Math.sin((i + seedVal) * 0.5) * 50 + 50 + (Math.random() * 20) }));
+      const sparklineData = Array.from({length: 12}, (_, i) => ({ val: Math.sin((i + seedVal) * 0.5) * 50 + 50 + (Math.random() * 20) }));
       
       return { totalRev, totalBrews, dau, arpu, sparklineData };
   }, [filteredData, timeRange]);
@@ -220,6 +231,7 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
   }, [filteredData]);
 
   const bcgMatrixData = useMemo(() => {
+      // Aggregate by beverage in filtered window
       const sales: Record<string, number> = {};
       filteredData.forEach(r => sales[r.beverage] = (sales[r.beverage] || 0) + 1);
       
@@ -229,10 +241,10 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
           const share = Math.min(95, Math.max(5, (val / filteredData.length) * 100));
           const growth = Math.random() * 100;
           let type = '';
-          if (share > 50 && growth > 50) type = 'Star';
-          else if (share > 50) type = 'Cash Cow';
-          else if (growth > 50) type = 'Question';
-          else type = 'Dog';
+          if (share > 50 && growth > 50) type = '明星产品 (Star)';
+          else if (share > 50) type = '金牛产品 (Cow)';
+          else if (growth > 50) type = '问题产品 (Question)';
+          else type = '瘦狗产品 (Dog)';
           
           return { 
             name: p, 
@@ -260,22 +272,39 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
   const aiBriefings = useMemo(() => {
       const scope = timeRange === 'Day' ? '今日' : timeRange === 'Week' ? '本周' : '本月';
       return [
-          { title: "营收激增", type: "机遇", color: "emerald", content: `${scope}营收超出目标 **12%**，主要由上海地区 **燕麦拿铁** 销量驱动。`, time: "2分钟前" },
-          { title: "库存预警", type: "风险", color: "amber", content: `**绿茶** 在深圳仓库存严重不足 (< 3天)，需关注${scope}补货计划。`, time: "15分钟前" },
-          { title: "流失风险", type: "警告", color: "rose", content: `${scope}下午4-6点时段用户留存率环比下降 **5%**。`, time: "1小时前" },
-          { title: "气象影响", type: "预测", color: "cyan", content: "预计下个周期热饮需求将提升 **+15%**。", time: "2小时前" },
-          { title: "新品反馈", type: "洞察", color: "indigo", content: "用户对**冷萃咖啡**的复购率本周提升 **8%**。", time: "3小时前" },
-          { title: "设备健康", type: "监控", color: "slate", content: "全网设备平均无故障运行时间 (MTBF) 达到历史新高。", time: "4小时前" }
+          { title: "营收激增", type: "机遇", color: "emerald", content: `${scope}营收超出目标 **12%**，主要由上海地区 **燕麦拿铁** 销量驱动。`, time: "09:41" },
+          { title: "库存预警", type: "风险", color: "amber", content: `**绿茶** 在深圳仓库存严重不足 (< 3天)，需关注${scope}补货计划。`, time: "08:30" },
+          { title: "流失风险", type: "警告", color: "rose", content: `${scope}下午4-6点时段用户留存率环比下降 **5%**。`, time: "昨天" },
+          { title: "气象影响", type: "预测", color: "cyan", content: "预计下个周期热饮需求将提升 **+15%**。", time: "昨天" }
       ];
   }, [timeRange]);
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
       setIsGeneratingReport(true);
-      setTimeout(() => setIsGeneratingReport(false), 2000);
+      try {
+          const report = await generateInsight(ModelType.SALES_PREDICTION, stats);
+          setAiReportContent(report);
+          setShowAIReportModal(true);
+      } catch (e) {
+          console.error(e);
+          setAiReportContent("生成报告时发生错误，请稍后重试。");
+          setShowAIReportModal(true);
+      } finally {
+          setIsGeneratingReport(false);
+      }
+  };
+
+  const handleExportReportFile = () => {
+    if (!aiReportContent) return;
+    const blob = new Blob([aiReportContent], { type: 'text/markdown;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `AI_Strategic_Insight_Report_${Date.now()}.md`;
+    link.click();
   };
 
   const handleExportCSV = () => {
-      const headers = ['Timestamp,City,Beverage,Quantity,Revenue,Temperature,Latency'];
+      const headers = ['时间戳,城市,饮品类型,数量,营收,水温,延迟'];
       const rows = filteredData.map(r => `${new Date(r.timestamp).toISOString()},${r.location.city},${r.beverage},${r.quantity},${r.quantity * 4.5},${r.params.temperature},${r.telemetry.latency}`);
       const csv = [headers, ...rows].join('\n');
       const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
@@ -289,244 +318,293 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
     const { x, y, width, height, name, size } = props;
     return (
       <g>
-        <rect x={x} y={y} width={width} height={height} style={{ fill: props.fill, stroke: '#020617', strokeWidth: 3, opacity: 0.9 }} />
-        {width > 50 && height > 35 && (
+        <rect x={x} y={y} width={width} height={height} style={{ fill: props.fill, stroke: '#020617', strokeWidth: 2, opacity: 0.9 }} />
+        {width > 40 && height > 30 && (
           <>
-            <text x={x + 6} y={y + 16} fill="#fff" fontSize={11} fontWeight="bold" textAnchor="start" style={{textTransform:'uppercase'}}>{name ? name.split(' ')[0] : ''}</text>
-            <text x={x + 6} y={y + 30} fill="rgba(255,255,255,0.7)" fontSize={10} textAnchor="start" fontFamily="JetBrains Mono">{(size || 0).toLocaleString()}</text>
+            <text x={x + 6} y={y + 16} fill="#fff" fontSize={10} fontWeight="bold" textAnchor="start" style={{textTransform:'uppercase'}}>{name.split(' ')[0]}</text>
+            <text x={x + 6} y={y + 28} fill="rgba(255,255,255,0.7)" fontSize={9} textAnchor="start" fontFamily="JetBrains Mono">{(size || 0).toLocaleString()}</text>
           </>
         )}
       </g>
     );
   };
 
-  return (
-    <div className="flex h-full gap-4">
-       {/* 1. LEFT SIDEBAR: INTELLIGENCE & CONTROL HUB (18%) */}
-       <div className="w-[18%] flex flex-col gap-3 min-h-0">
-           {/* Control Panel */}
-           <div className="bg-slate-900/60 border border-white/5 rounded-xl p-3 flex flex-col justify-between backdrop-blur-md relative overflow-hidden group shrink-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="flex justify-between items-center relative z-10 mb-2">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Filter size={12} className="text-indigo-400"/> 时间维度</span>
-                    <button onClick={() => setShowFullReport(true)} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"><Download size={12}/></button>
-                </div>
-                <div className="flex bg-slate-950/80 p-0.5 rounded-lg border border-white/5 relative z-10">
-                    {['Day', 'Week', 'Month'].map(r => (
-                        <button key={r} onClick={()=>setTimeRange(r as any)} className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-all font-mono uppercase tracking-wider ${timeRange===r?'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20':'text-slate-500 hover:text-slate-200'}`}>
-                            {r === 'Day' ? '今日' : r === 'Week' ? '本周' : '本月'}
-                        </button>
-                    ))}
-                </div>
-           </div>
+  const ChartHeader = ({ title, icon: Icon, color = "indigo" }: any) => (
+      <div className="flex justify-between items-center mb-2 pb-2 border-b border-white/5">
+          <h3 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-slate-200`}>
+              <Icon size={14} className={`text-${color}-400`} /> {title}
+          </h3>
+          <button className="text-slate-500 hover:text-white transition-colors"><MoreHorizontal size={14} /></button>
+      </div>
+  );
 
-           {/* AI Executive Feed (Full Height) */}
-           <div className="flex-1 bg-slate-900/60 border border-white/5 rounded-xl flex flex-col relative overflow-hidden backdrop-blur-md min-h-0 shadow-lg">
-                <div className="p-3 border-b border-white/5 flex items-center justify-between shrink-0 bg-slate-900/80">
-                    <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest flex items-center gap-2"><Sparkles size={12}/> AI 经营简报</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+  return (
+    <div className="flex flex-col h-full gap-3 overflow-hidden">
+       
+       {/* 1. Global Toolbar */}
+       <div className="flex justify-between items-center bg-slate-900/60 p-1.5 rounded-xl border border-white/5 backdrop-blur-md shadow-2xl shrink-0 h-12">
+          <div className="flex items-center gap-4 pl-2">
+             <div className="flex items-center gap-2 text-indigo-400">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20"><BarChart3 size={16} /></div>
+                <div>
+                    <span className="block text-xs font-bold tracking-wide text-white">商业智能分析</span>
+                    <span className="block text-[9px] text-slate-500 font-mono tracking-wider">实时数据洞察</span>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-0 bg-gradient-to-b from-slate-900/0 to-slate-900/50">
-                        <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-800 border-l border-dashed border-slate-700/50"></div>
-                        {aiBriefings.map((item, i) => (
-                            <div key={i} className="p-4 pl-8 border-b border-white/5 hover:bg-white/[0.02] transition-colors relative group">
-                                <div className={`absolute left-[13px] top-5 w-2 h-2 rounded-full border-2 border-slate-900 z-10 ${item.color==='emerald'?'bg-emerald-500':item.color==='amber'?'bg-amber-500':item.color==='rose'?'bg-rose-500':'bg-cyan-500'}`}></div>
-                                <div className="flex justify-between items-baseline mb-1">
-                                    <span className={`text-[9px] font-bold uppercase tracking-wider text-${item.color}-400`}>{item.type}</span>
-                                    <span className="text-[9px] text-slate-600 font-mono">{item.time}</span>
-                                </div>
-                                <h4 className="text-xs font-bold text-slate-200 mb-1">{item.title}</h4>
-                                <p className="text-[10px] text-slate-400 leading-relaxed font-light" dangerouslySetInnerHTML={{__html: item.content.replace(/\*\*(.*?)\*\*/g, '<span class="text-indigo-300 font-bold">$1</span>')}}></p>
-                            </div>
-                        ))}
-                </div>
-                <div className="p-3 border-t border-white/5 bg-slate-900/80 shrink-0">
-                    <button onClick={handleGenerateReport} disabled={isGeneratingReport} className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 transition-all border border-indigo-400/20">
-                        {isGeneratingReport ? <Loader2 size={12} className="animate-spin"/> : <FileText size={12}/>}
-                        {isGeneratingReport ? 'ANALYZING...' : '生成分析报告'}
-                    </button>
-                </div>
-           </div>
+             </div>
+             <div className="h-6 w-px bg-white/5 mx-2"></div>
+             {/* Integrated Time Controls */}
+             <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800">
+                {['Day', 'Week', 'Month'].map(r => (
+                   <button key={r} onClick={()=>setTimeRange(r as any)} className={`px-4 py-1 text-[10px] font-bold rounded-md transition-all uppercase tracking-wider ${timeRange===r ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}>{r === 'Day' ? '今日实时' : r === 'Week' ? '本周累计' : '本月汇总'}</button>
+                ))}
+             </div>
+          </div>
+          <div className="flex items-center gap-3 pr-2">
+             <button onClick={()=>setShowFullReport(true)} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-300 transition-all uppercase tracking-wider flex items-center gap-2 hover:border-slate-500"><FileSpreadsheet size={12}/> 导出数据报表</button>
+             <button onClick={handleGenerateReport} disabled={isGeneratingReport} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 border border-indigo-500/50">
+                 {isGeneratingReport ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}
+                 {isGeneratingReport ? '分析中...' : 'AI 智能洞察'}
+             </button>
+          </div>
        </div>
 
-       {/* 2. RIGHT WORKSPACE: VISUALIZATION GRID (82%) */}
-       <div className="flex-1 flex flex-col gap-3 min-h-0">
-           {/* TOP ROW: KPIs (12%) */}
-           <div className="flex-[0_0_auto] h-[90px] grid grid-cols-4 gap-3">
-               {[
-                  { l: `总营收 (GMV)`, v: `¥${kpiStats.totalRev.toLocaleString()}`, t: "+24.5%", c: "indigo", i: DollarSign, data: kpiStats.sparklineData, target: 85 },
-                  { l: "总冲泡 (Total Brews)", v: kpiStats.totalBrews.toLocaleString(), t: "+8.3%", c: "amber", i: Coffee, data: kpiStats.sparklineData.map(d=>({val:d.val*0.8})), target: 62 }, 
-                  { l: "活跃用户 (DAU)", v: kpiStats.dau.toLocaleString(), t: "+12.8%", c: "emerald", i: Users, data: kpiStats.sparklineData.map(d=>({val:d.val*0.5})), target: 94 },
-                  { l: "客单价 (ARPU)", v: `¥${kpiStats.arpu.toFixed(1)}`, t: "+5.2%", c: "cyan", i: Target, data: kpiStats.sparklineData.map(d=>({val:d.val*1.2})), target: 78 },
-               ].map((k, idx) => (
-                  <div key={idx} className="bg-slate-900/60 border border-white/5 rounded-xl p-3 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-white/10 transition-all backdrop-blur-md">
-                      <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full bg-${k.c}-500/5 blur-2xl group-hover:bg-${k.c}-500/10 transition-all`}></div>
-                      <div className="flex justify-between items-start relative z-10">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate max-w-[80%]">{k.l}</span>
-                          <span className={`text-[9px] font-bold font-mono px-1.5 rounded-full ${k.t.startsWith('+') ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}`}>{k.t}</span>
-                      </div>
-                      <div className="flex justify-between items-end mt-1">
-                          <div>
-                              <h3 className="text-2xl font-mono font-bold text-slate-100 tracking-tighter leading-none mb-1">{k.v}</h3>
-                              <div className="flex items-center gap-1.5 opacity-60">
-                                  <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                      <div className={`h-full bg-${k.c}-500 rounded-full`} style={{width: `${k.target}%`}}></div>
-                                  </div>
-                                  <span className="text-[8px] text-slate-500 font-mono">{k.target}% Target</span>
-                              </div>
-                          </div>
-                          <div className="h-8 w-16 opacity-50 grayscale group-hover:grayscale-0 transition-all">
-                              <ResponsiveContainer width="100%" height="100%">
-                                  <AreaChart data={k.data}>
-                                      <defs><linearGradient id={`grad${idx}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={COLORS[k.c === 'indigo' ? 'primary' : k.c === 'emerald' ? 'success' : k.c === 'cyan' ? 'secondary' : 'warning']} stopOpacity={0.4}/><stop offset="100%" stopColor="transparent" stopOpacity={0}/></linearGradient></defs>
-                                      <Area type="monotone" dataKey="val" stroke={COLORS[k.c === 'indigo' ? 'primary' : k.c === 'emerald' ? 'success' : k.c === 'cyan' ? 'secondary' : 'warning']} strokeWidth={1.5} fill={`url(#grad${idx})`} />
-                                  </AreaChart>
-                              </ResponsiveContainer>
-                          </div>
-                      </div>
-                  </div>
-               ))}
-           </div>
+       {/* 2. KPI HUD Grid */}
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0 h-[100px]">
+           <ContextualKPI label="总营收 (GMV)" value={`¥${kpiStats.totalRev.toLocaleString()}`} trend="+24.5%" color="indigo" icon={DollarSign} data={kpiStats.sparklineData} target={85} />
+           <ContextualKPI label="总冲泡杯数" value={kpiStats.totalBrews.toLocaleString()} trend="+8.3%" color="amber" icon={Coffee} data={kpiStats.sparklineData.map(d=>({val:d.val*0.8}))} target={62} />
+           <ContextualKPI label="日活跃用户 (DAU)" value={kpiStats.dau.toLocaleString()} trend="+12.8%" color="emerald" icon={Users} data={kpiStats.sparklineData.map(d=>({val:d.val*0.5}))} target={94} />
+           <ContextualKPI label="客单价 (ARPU)" value={`¥${kpiStats.arpu.toFixed(1)}`} trend="+5.2%" color="cyan" icon={Target} data={kpiStats.sparklineData.map(d=>({val:d.val*1.2}))} target={78} />
+       </div>
 
-           {/* MIDDLE ROW: Revenue Trend (48%) */}
-           <div className="flex-[5] min-h-0 bg-slate-900/60 border border-white/5 rounded-xl p-0 flex flex-col backdrop-blur-md relative overflow-hidden group shadow-lg">
-                <div className="p-3 border-b border-white/5 flex justify-between items-center bg-slate-900/50">
-                     <div className="flex items-center gap-3">
-                         <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><BarChart3 size={12}/> 营收趋势与 AI 预测</span>
-                     </div>
-                     <div className="flex items-center gap-3 text-[9px] font-mono text-slate-500">
-                        <span className="flex items-center gap-1.5"><div className="w-2 h-2 bg-indigo-500 rounded-[1px]"></div>实际值 (ACTUAL)</span>
-                        <span className="flex items-center gap-1.5"><div className="w-2 h-2 border border-indigo-400/50 border-dashed bg-indigo-500/10 rounded-[1px]"></div>预测值 (FORECAST)</span>
-                        <span className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-emerald-400 rounded-full"></div>环比增长 (GROWTH)</span>
-                     </div>
-                </div>
-                <div className="flex-1 min-h-0 w-full p-2 relative">
+       {/* 3. Main Analytics & AI Feed Split + 4. Deep Dive Metrics (Grid 3) Container */}
+       <div className="flex-1 min-h-0 flex flex-col gap-3">
+          {/* Top Row: Revenue + AI Feed */}
+          <div className="grid grid-cols-12 gap-3 flex-[55] min-h-0">
+              {/* Revenue Chart (Hero) */}
+              <div className="col-span-12 lg:col-span-8 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl relative group overflow-hidden">
+                 <div className="absolute top-0 right-0 w-[300px] h-full bg-indigo-500/5 blur-[80px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-100"></div>
+                 <ChartHeader title="营收趋势与智能预测" icon={BarChart3} color="indigo" />
+                 
+                 <div className="flex-1 min-h-0 w-full relative z-10">
                     <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={revenueData} margin={{top:10,right:10,left:-20,bottom:0}}>
                             <defs>
-                                <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity={0.8}/><stop offset="100%" stopColor="#6366f1" stopOpacity={0.05}/></linearGradient>
-                                <pattern id="stripe" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" transform="translate(0,0)" fill="#6366f1" fillOpacity="0.3"></rect></pattern>
+                                <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity={0.6}/><stop offset="100%" stopColor="#6366f1" stopOpacity={0.05}/></linearGradient>
+                                <pattern id="stripe" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="8" transform="translate(0,0)" fill="#6366f1" fillOpacity="0.2"></rect></pattern>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.5}/>
-                            <XAxis dataKey="label" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} dy={5} tick={{fontFamily: 'JetBrains Mono'}}/>
-                            <YAxis yAxisId="left" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(v)=>`¥${v/1000}k`} tick={{fontFamily: 'JetBrains Mono'}}/>
-                            <YAxis yAxisId="right" orientation="right" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(v)=>`${v}%`} tick={{fontFamily: 'JetBrains Mono'}}/>
-                            <Tooltip contentStyle={{backgroundColor:'#020617', borderColor:'#334155', borderRadius:'4px', padding:'8px'}} itemStyle={{fontSize:'10px', fontFamily:'JetBrains Mono', padding:0}} labelStyle={{color:'#94a3b8', fontSize:'9px', marginBottom:'4px', textTransform:'uppercase'}} formatter={(value:any, name:string) => { if (name.includes('Growth')) return [`${value.toFixed(1)}%`, name.replace('MoM Growth (', '').replace(')', '')]; if (name === 'predicted') return [`¥${Math.round(value).toLocaleString()}`, 'AI 预测']; return [`¥${Math.round(value).toLocaleString()}`, '实际营收']; }} cursor={{ fill: '#ffffff03' }} />
-                            <Bar yAxisId="left" dataKey="revenue" fill="url(#revenueFill)" barSize={24} radius={[2,2,0,0]} name="Actual"/>
-                            <Bar yAxisId="left" dataKey="predicted" fill="url(#stripe)" stroke="#6366f1" strokeWidth={1} strokeDasharray="2 2" barSize={24} radius={[2,2,0,0]} name="predicted"/>
-                            <Line yAxisId="right" type="monotone" dataKey="growthActual" stroke="#34d399" strokeWidth={2} dot={{r:2, fill:'#020617', stroke:'#34d399', strokeWidth:1.5}} name="MoM Growth (Act)"/>
-                            <Line yAxisId="right" type="monotone" dataKey="growthPredicted" stroke="#34d399" strokeWidth={2} strokeDasharray="3 3" dot={false} name="MoM Growth (Fcst)"/>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.4}/>
+                            <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} dy={10} tick={{fontFamily: 'JetBrains Mono'}}/>
+                            <YAxis yAxisId="left" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v)=>`¥${v/1000}k`} tick={{fontFamily: 'JetBrains Mono'}}/>
+                            <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v)=>`${v}%`} tick={{fontFamily: 'JetBrains Mono'}}/>
+                            <Tooltip contentStyle={{backgroundColor:'#0f172a', borderColor:'#334155', borderRadius:'8px', padding:'12px', boxShadow:'0 10px 15px -3px rgba(0, 0, 0, 0.5)'}} itemStyle={{fontSize:'11px', fontFamily:'JetBrains Mono', padding:'2px 0'}} labelStyle={{color:'#94a3b8', fontSize:'10px', marginBottom:'8px', textTransform:'uppercase', fontWeight:'bold'}} cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '5 5' }} />
+                            <Bar yAxisId="left" dataKey="revenue" fill="url(#revenueFill)" barSize={32} radius={[4,4,0,0]} name="实际营收"/>
+                            <Bar yAxisId="left" dataKey="predicted" fill="url(#stripe)" stroke="#6366f1" strokeWidth={1} strokeOpacity={0.3} strokeDasharray="4 4" barSize={32} radius={[4,4,0,0]} name="AI 预测"/>
+                            <Line yAxisId="right" type="monotone" dataKey="growthActual" stroke="#10b981" strokeWidth={2} dot={{r:3, fill:'#020617', stroke:'#10b981', strokeWidth:2}} name="实际增长"/>
+                            <Line yAxisId="right" type="monotone" dataKey="growthPredicted" stroke="#10b981" strokeWidth={2} strokeDasharray="4 4" dot={false} name="预测增长"/>
                         </ComposedChart>
                     </ResponsiveContainer>
-                </div>
-           </div>
+                 </div>
+              </div>
 
-           {/* BOTTOM ROW: Charts Grid (40%) - Heatmap | BCG | Treemap */}
-           <div className="flex-[4] min-h-0 grid grid-cols-12 gap-3">
-                
-                {/* 1. Heatmap (Width 4/12) */}
-                <div className="col-span-12 xl:col-span-4 bg-slate-900/60 border border-white/5 rounded-xl p-0 flex flex-col backdrop-blur-md min-h-0 shadow-lg">
-                    <div className="p-2 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><MapPin size={10} className="text-rose-400"/> 区域热力</span>
-                    </div>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2.5">
+              {/* AI Briefing Feed */}
+              <div className="col-span-12 lg:col-span-4 bg-slate-900/50 border border-white/5 rounded-xl p-0 flex flex-col backdrop-blur-md shadow-2xl relative overflow-hidden">
+                 <div className="p-3 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                     <h3 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-slate-200"><BrainCircuit size={14} className="text-emerald-400" /> AI 神经网络情报流</h3>
+                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></div>
+                 </div>
+                 <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+                     {aiBriefings.map((item, i) => (
+                         <div key={i} className="p-3 border-b border-white/5 hover:bg-white/[0.02] transition-colors group relative">
+                             <div className={`absolute left-0 top-0 bottom-0 w-0.5 transition-all group-hover:w-1 ${item.color==='emerald'?'bg-emerald-500':item.color==='amber'?'bg-amber-500':item.color==='rose'?'bg-rose-500':'bg-cyan-500'}`}></div>
+                             <div className="flex justify-between items-start mb-1 pl-2">
+                                 <div className="flex items-center gap-2">
+                                    <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.color==='emerald'?'border-emerald-500/20 text-emerald-400 bg-emerald-500/10':item.color==='amber'?'border-amber-500/20 text-amber-400 bg-amber-500/10':item.color==='rose'?'border-rose-500/20 text-rose-400 bg-rose-500/10':'border-cyan-500/20 text-cyan-400 bg-cyan-500/10'}`}>{item.type}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">{item.time}</span>
+                                 </div>
+                                 <Share2 size={12} className="text-slate-600 hover:text-white cursor-pointer transition-colors"/>
+                             </div>
+                             <h4 className="text-xs font-bold text-slate-200 mb-0.5 pl-2 group-hover:text-white transition-colors">{item.title}</h4>
+                             <p className="text-[10px] text-slate-400 leading-relaxed font-light pl-2" dangerouslySetInnerHTML={{__html: item.content.replace(/\*\*(.*?)\*\*/g, '<span class="text-white font-medium">$1</span>')}}></p>
+                         </div>
+                     ))}
+                 </div>
+                 <div className="p-2 bg-white/[0.02] border-t border-white/5">
+                     <button onClick={handleGenerateReport} className="w-full py-1.5 bg-slate-800 hover:bg-indigo-600 text-slate-400 hover:text-white rounded border border-white/5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 group">
+                        <FileText size={12}/> 生成详细简报 <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform"/>
+                     </button>
+                 </div>
+              </div>
+          </div>
+
+          {/* Bottom Row: Deep Dive */}
+          <div className="grid grid-cols-12 gap-3 flex-[45] min-h-0">
+                {/* Regional Heatmap (Span 3) */}
+                <div className="col-span-12 md:col-span-4 lg:col-span-3 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl min-h-0">
+                    <ChartHeader title="区域销售热力榜" icon={MapPin} color="rose" />
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
                         {cityHeatmapData.map((item, idx) => (
-                        <div key={item.city} className="group">
-                            <div className="flex justify-between items-center text-[9px] mb-0.5 font-mono">
-                                <span className="font-bold text-slate-300 flex items-center gap-2"><span className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[8px] ${idx < 3 ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span><span className="font-sans tracking-wide">{item.city}</span></span>
-                                <div className="flex items-center gap-2"><span className="text-slate-400">¥{item.sales.toLocaleString()}</span><span className={`${item.growth>0 ? 'text-emerald-400' : 'text-rose-400'}`}>{item.growth > 0 ? '▲' : '▼'} {Math.abs(item.growth).toFixed(0)}%</span></div>
-                            </div>
-                            <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden"><div className={`h-full rounded-full ${idx === 0 ? 'bg-rose-500' : idx === 1 ? 'bg-amber-500' : 'bg-slate-600'}`} style={{width: `${item.pct}%`}}></div></div>
-                        </div>
-                    ))}
+                          <div key={item.city} className="group cursor-pointer">
+                              <div className="flex justify-between items-center text-[10px] mb-1 font-mono">
+                                  <span className="font-bold text-slate-300 flex items-center gap-2">
+                                      <span className={`w-4 h-4 rounded flex items-center justify-center text-[9px] font-sans ${idx < 3 ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
+                                      <span className="font-sans tracking-wide text-xs">{item.city}</span>
+                                  </span>
+                                  <div className="flex flex-col items-end">
+                                      <span className="text-slate-200 font-bold">¥{(item.sales/1000).toFixed(1)}k</span>
+                                  </div>
+                              </div>
+                              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden border border-white/5">
+                                  <div className={`h-full rounded-full transition-all duration-1000 ${idx === 0 ? 'bg-gradient-to-r from-rose-500 to-orange-500' : idx === 1 ? 'bg-gradient-to-r from-amber-500 to-yellow-500' : 'bg-slate-600'}`} style={{width: `${item.pct}%`}}></div>
+                              </div>
+                          </div>
+                      ))}
                     </div>
                 </div>
 
-                {/* 2. BCG Matrix (Width 4/12) */}
-                <div className="col-span-12 xl:col-span-4 bg-slate-900/60 border border-white/5 rounded-xl p-0 flex flex-col backdrop-blur-md min-h-0 relative overflow-hidden shadow-lg">
-                    <div className="p-2 border-b border-white/5 flex justify-between items-center bg-white/[0.01] relative z-10">
-                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><Target size={10} className="text-amber-400"/> 产品波士顿矩阵 (BCG)</span>
-                    </div>
+                {/* BCG Matrix (Span 5) */}
+                <div className="col-span-12 md:col-span-8 lg:col-span-5 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl min-h-0 relative">
+                    <ChartHeader title="产品波士顿矩阵 (BCG)" icon={Target} color="amber" />
                     <div className="flex-1 min-h-0 relative">
-                        {/* Background Quadrants */}
-                        <div className="absolute inset-2 grid grid-cols-2 grid-rows-2 gap-px pointer-events-none opacity-20">
-                            <div className="bg-amber-500/20"></div> <div className="bg-blue-500/20"></div>  
-                            <div className="bg-slate-500/20"></div> <div className="bg-emerald-500/20"></div>   
+                        {/* Quadrant Backgrounds */}
+                        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-0.5 pointer-events-none opacity-30">
+                             <div className="bg-amber-500/10 border-r border-b border-amber-500/30 flex items-start justify-start p-2"><span className="text-[9px] font-bold text-amber-500 uppercase">问题产品 ?</span></div> 
+                             <div className="bg-emerald-500/10 border-b border-emerald-500/30 flex items-start justify-end p-2"><span className="text-[9px] font-bold text-emerald-500 uppercase">明星产品 ★</span></div>  
+                             <div className="bg-slate-500/10 border-r border-slate-500/30 flex items-end justify-start p-2"><span className="text-[9px] font-bold text-slate-500 uppercase">瘦狗产品 ✖</span></div> 
+                             <div className="bg-blue-500/10 flex items-end justify-end p-2"><span className="text-[9px] font-bold text-blue-500 uppercase">金牛产品 $</span></div>   
                         </div>
                         <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{top: 20, right: 20, bottom: 20, left: 0}}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
-                                <XAxis type="number" dataKey="x" name="Market Share" unit="%" stroke="#475569" fontSize={8} tickLine={false} axisLine={false} tick={{fontFamily: 'JetBrains Mono'}} domain={[0, 100]}/>
-                                <YAxis type="number" dataKey="y" name="Growth Rate" unit="%" stroke="#475569" fontSize={8} tickLine={false} axisLine={false} tick={{fontFamily: 'JetBrains Mono'}} domain={[0, 100]}/>
-                                <ZAxis type="number" dataKey="z" range={[30, 300]} />
-                                <Tooltip cursor={{strokeDasharray: '3 3'}} content={({active, payload}) => { if (active && payload && payload.length) { const d = payload[0].payload; return <div className="bg-slate-950 border border-slate-700 p-1.5 rounded text-[9px]"><div className="font-bold text-white">{d.name}</div><div className="text-slate-400">{d.type}</div></div> } return null; }}/>
-                                <ReferenceLine x={50} stroke="#334155" strokeDasharray="3 3" />
-                                <ReferenceLine y={50} stroke="#334155" strokeDasharray="3 3" />
-                                <ReferenceArea x1={50} x2={100} y1={50} y2={100} strokeOpacity={0} fillOpacity={0}><Label value="明星 (Star)" position="insideTopRight" fill="#eab308" fontSize={10} fontWeight="bold" opacity={0.5}/></ReferenceArea>
-                                <ReferenceArea x1={0} x2={50} y1={50} y2={100} strokeOpacity={0} fillOpacity={0}><Label value="问题 (Question)" position="insideTopLeft" fill="#3b82f6" fontSize={10} fontWeight="bold" opacity={0.5}/></ReferenceArea>
-                                <ReferenceArea x1={50} x2={100} y1={0} y2={50} strokeOpacity={0} fillOpacity={0}><Label value="金牛 (Cow)" position="insideBottomRight" fill="#10b981" fontSize={10} fontWeight="bold" opacity={0.5}/></ReferenceArea>
-                                <ReferenceArea x1={0} x2={50} y1={0} y2={50} strokeOpacity={0} fillOpacity={0}><Label value="瘦狗 (Dog)" position="insideBottomLeft" fill="#64748b" fontSize={10} fontWeight="bold" opacity={0.5}/></ReferenceArea>
-                                <Scatter name="Products" data={bcgMatrixData}>{bcgMatrixData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke="#fff" strokeWidth={1} />)}</Scatter>
+                            <ScatterChart margin={{top: 10, right: 10, bottom: 10, left: 0}}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.2} />
+                                <XAxis type="number" dataKey="x" name="Market Share" unit="%" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tick={{fontFamily: 'JetBrains Mono'}} domain={[0, 100]} hide/>
+                                <YAxis type="number" dataKey="y" name="Growth Rate" unit="%" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tick={{fontFamily: 'JetBrains Mono'}} domain={[0, 100]} hide/>
+                                <ZAxis type="number" dataKey="z" range={[100, 800]} />
+                                <Tooltip cursor={{strokeDasharray: '3 3'}} content={({active, payload}) => { if (active && payload && payload.length) { const d = payload[0].payload; return <div className="bg-slate-950 border border-slate-700 p-3 rounded-lg shadow-xl text-[10px]"><div className="font-bold text-white mb-1 uppercase tracking-wider">{d.name}</div><div className="text-slate-400 font-mono mb-1">{d.type}</div><div className="flex gap-2 font-mono"><span className="text-indigo-400">份额: {d.x.toFixed(0)}%</span><span className="text-emerald-400">增长: {d.y.toFixed(0)}%</span></div></div> } return null; }}/>
+                                <Scatter name="Products" data={bcgMatrixData}>
+                                    {bcgMatrixData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke="#fff" strokeWidth={1} fillOpacity={0.8} />)}
+                                    <LabelList dataKey="name" position="top" offset={8} style={{ fontSize: '10px', fill: '#e2e8f0', fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontFamily: 'Inter' }} />
+                                </Scatter>
                             </ScatterChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* 3. Treemap (Width 4/12) */}
-                <div className="col-span-12 xl:col-span-4 bg-slate-900/60 border border-white/5 rounded-xl p-0 flex flex-col backdrop-blur-md min-h-0 shadow-lg">
-                    <div className="p-2 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><Layers size={10} className="text-cyan-400"/> 全球市场份额分布</span>
-                    </div>
+                {/* Market Share Treemap (Span 4) */}
+                <div className="col-span-12 md:col-span-12 lg:col-span-4 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl min-h-0">
+                    <ChartHeader title="全球品类市场份额" icon={Layers} color="cyan" />
                     <div className="flex-1 min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
                             <Treemap data={treemapData} dataKey="size" aspectRatio={4/3} stroke="#020617" content={<CustomTreemapContent />} />
                         </ResponsiveContainer>
                     </div>
                 </div>
-
            </div>
        </div>
 
        {showFullReport && (
-          <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center backdrop-blur-md animate-in fade-in">
-              <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-[900px] h-[600px] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
-                  <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-                      <div><h3 className="text-white font-bold text-base flex items-center gap-2"><FileSpreadsheet size={16} className="text-emerald-400"/> 完整分析报表</h3></div>
-                      <button onClick={()=>setShowFullReport(false)} className="p-1 hover:bg-slate-800 rounded-full transition-colors"><X size={16} className="text-slate-400"/></button>
-                  </div>
-                  <div className="flex-1 bg-slate-950 overflow-auto custom-scrollbar">
-                      <table className="w-full text-left text-xs font-mono border-collapse relative">
-                        <thead className="bg-slate-900/90 text-slate-400 sticky top-0 z-10 backdrop-blur border-b border-slate-800">
-                            <tr>{['TIMESTAMP','CITY','BEVERAGE','QTY','REVENUE','TEMP','LATENCY'].map(h=><th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">{h}</th>)}</tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800/50 text-slate-300">
-                            {filteredData.length === 0 && (
-                                <tr><td colSpan={7} className="text-center py-10 text-slate-500">当前时间范围内暂无数据。请尝试切换时间维度或等待实时数据流入。</td></tr>
-                            )}
-                            {filteredData.slice(0, 500).map(r => (
-                                <tr key={r.id} className="hover:bg-slate-900/50">
-                                    <td className="px-4 py-2 text-slate-500">{new Date(r.timestamp).toLocaleString()}</td>
-                                    <td className="px-4 py-2 text-white">{CITY_TRANSLATION[r.location.city] || r.location.city}</td>
-                                    <td className="px-4 py-2"><span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800/50 text-[10px]">{r.beverage}</span></td>
-                                    <td className="px-4 py-2">{r.quantity}</td>
-                                    <td className="px-4 py-2 font-bold text-emerald-400">¥{(r.quantity * 4.5).toFixed(1)}</td>
-                                    <td className={`px-4 py-2 ${r.params.temperature>90?'text-rose-400':'text-slate-300'}`}>{r.params.temperature}°C</td>
-                                    <td className="px-4 py-2 text-slate-500">{r.telemetry.latency}ms</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                  </div>
-                  <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex justify-end">
-                      <button onClick={handleExportCSV} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2"><Download size={14}/> 导出 Excel (CSV)</button>
-                  </div>
+          <div className="fixed inset-0 z-[2000] bg-black/80 flex items-center justify-center backdrop-blur-sm p-4">
+            <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-5xl h-[700px] flex flex-col shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"></div>
+              <div className="flex justify-between mb-6 border-b border-slate-800 pb-4">
+                <div>
+                    <h3 className="text-white font-bold text-xl tracking-tight">全维度运营数据报表</h3>
+                    <p className="text-slate-500 text-xs mt-1 font-mono uppercase">基于实时 IoT 数据湖生成</p>
+                </div>
+                <button className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors" onClick={()=>setShowFullReport(false)}><X size={20}/></button>
               </div>
+              <div className="flex-1 overflow-auto custom-scrollbar bg-slate-950/50 rounded-xl border border-slate-800">
+                <table className="w-full text-left text-xs font-mono border-collapse relative">
+                    <thead className="bg-slate-900 text-slate-400 sticky top-0 z-10 backdrop-blur border-b border-slate-800 shadow-sm">
+                        <tr>{['时间戳','城市','饮品类型','数量','营收','水温','延迟'].map(h=><th key={h} className="px-6 py-4 font-bold tracking-wider">{h}</th>)}</tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50 text-slate-300">
+                        {filteredData.slice(0, 500).map(r => (
+                            <tr key={r.id} className="hover:bg-slate-900/80 transition-colors">
+                                <td className="px-6 py-3 text-slate-500">{new Date(r.timestamp).toLocaleString()}</td>
+                                <td className="px-6 py-3 text-white font-bold">{CITY_TRANSLATION[r.location.city] || r.location.city}</td>
+                                <td className="px-6 py-3"><span className="px-2 py-0.5 rounded border border-slate-700 bg-slate-800 text-[10px] uppercase tracking-wide text-slate-300">{r.beverage}</span></td>
+                                <td className="px-6 py-3">{r.quantity}</td>
+                                <td className="px-6 py-3 font-bold text-emerald-400">¥{(r.quantity * 4.5).toFixed(1)}</td>
+                                <td className={`px-6 py-3 ${r.params.temperature>90?'text-rose-400':'text-slate-300'}`}>{r.params.temperature}°C</td>
+                                <td className="px-6 py-3 text-slate-500">{r.telemetry.latency}ms</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                  </table>
+              </div>
+              <div className="flex justify-end gap-3 mt-6 pt-2 border-t border-slate-800">
+                <button onClick={()=>setShowFullReport(false)} className="px-6 py-2.5 text-xs font-bold text-slate-400 hover:text-white uppercase tracking-wider">取消</button>
+                <button onClick={handleExportCSV} className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 uppercase tracking-wider shadow-lg shadow-indigo-900/20"><Download size={14}/> 下载 CSV</button>
+              </div>
+            </div>
           </div>
-      )}
+       )}
+
+       {showAIReportModal && (
+           <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center backdrop-blur-md animate-in fade-in p-4">
+               <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-full max-w-4xl h-[700px] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+                   <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                       <div><h3 className="text-white font-bold text-lg flex items-center gap-2"><BrainCircuit size={20} className="text-indigo-400"/> AI 战略洞察报告</h3></div>
+                       <button onClick={()=>setShowAIReportModal(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={18} className="text-slate-400"/></button>
+                   </div>
+                   <div className="flex-1 bg-slate-950 overflow-auto custom-scrollbar p-8">
+                       <div className="prose prose-invert prose-sm max-w-none font-sans text-slate-300 leading-relaxed whitespace-pre-wrap">
+                           {aiReportContent}
+                       </div>
+                   </div>
+                   <div className="p-5 border-t border-slate-800 bg-slate-900/50 flex justify-end gap-4">
+                       <button onClick={()=>setShowAIReportModal(false)} className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white uppercase tracking-wider transition-colors">关闭</button>
+                       <button onClick={handleExportReportFile} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2"><Download size={14}/> 导出报告 (Markdown)</button>
+                   </div>
+               </div>
+           </div>
+       )}
     </div>
   );
 };
 
+const ContextualKPI = ({ label, value, trend, color, icon: Icon, data, target }: any) => (
+    <div className={`bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-xl p-4 shadow-lg relative overflow-hidden flex flex-col justify-between group hover:border-${color}-500/30 transition-all duration-500 backdrop-blur-md`}>
+        {/* Ambient Glow */}
+        <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full bg-${color}-500/10 blur-[60px] group-hover:bg-${color}-500/20 transition-all`}></div>
+        
+        <div className="flex justify-between items-start relative z-10 mb-2">
+            <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg bg-${color}-500/10 border border-${color}-500/20 text-${color}-400 shadow-[0_0_15px_rgba(0,0,0,0.3)]`}>
+                    <Icon size={16}/>
+                </div>
+                <div>
+                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">{label}</span>
+                     <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-[10px] font-bold font-mono px-1.5 rounded ${trend.startsWith('+') ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}`}>{trend}</span>
+                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <div className="flex justify-between items-end relative z-10">
+            <div>
+                <h3 className="text-2xl font-mono font-bold text-white tracking-tighter leading-none mb-2 drop-shadow-md">{value}</h3>
+                <div className="flex items-center gap-2">
+                    <div className="w-16 h-1 bg-slate-800 rounded-full overflow-hidden border border-white/5">
+                        <div className={`h-full bg-${color}-500 rounded-full shadow-[0_0_8px_currentColor]`} style={{width: `${target}%`}}></div>
+                    </div>
+                    <span className="text-[9px] text-slate-400 font-mono tracking-tight">{target}% 目标达成</span>
+                </div>
+            </div>
+            
+            <div className="h-10 w-24 opacity-60 group-hover:opacity-100 transition-opacity filter drop-shadow-lg">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data}>
+                        <defs><linearGradient id={`grad_${color}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={COLORS[color === 'indigo' ? 'primary' : color === 'emerald' ? 'success' : color === 'cyan' ? 'secondary' : 'warning']} stopOpacity={0.6}/><stop offset="100%" stopColor="transparent" stopOpacity={0}/></linearGradient></defs>
+                        <Area type="monotone" dataKey="val" stroke={COLORS[color === 'indigo' ? 'primary' : color === 'emerald' ? 'success' : color === 'cyan' ? 'secondary' : 'warning']} strokeWidth={2} fill={`url(#grad_${color})`} />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    </div>
+);
+
+// --- Telemetry View (IoT Monitoring) ---
 const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [activeDropdown, setActiveDropdown] = useState(false);

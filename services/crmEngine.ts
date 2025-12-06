@@ -246,7 +246,7 @@ export const generateUserProfile = (userId: string, records: IoTRecord[], traine
   const evidenceInventoryStatus = inventory.overallStatus; // Inventory
   const evidenceSentiment = currentSentiment; // Sentiment
   const evidenceOpenComplaints = feedbackHistory.filter(f => f.status === 'open');
-  const evidenceLastRequest = lastFeedback ? (lastFeedback.type === 'complaint' ? '维修申请' : lastFeedback.type) : '无';
+  const evidencePendingTickets = evidenceOpenComplaints.length; // Pending Work Orders
   const evidenceChurn = churnProbability;
 
   // 2. Calculate Action Scores based on 8 Dimensions
@@ -260,10 +260,9 @@ export const generateUserProfile = (userId: string, records: IoTRecord[], traine
 
   // MAINTENANCE SCORE
   let scoreMaintenance = 0;
-  if (evidenceOpenComplaints.length > 0) scoreMaintenance += 95; // Critical blocker
+  if (evidencePendingTickets > 0) scoreMaintenance += 95; // Critical blocker
   if (errors > 0) scoreMaintenance += 50;
   if (evidenceSentiment === 'Negative') scoreMaintenance += 30;
-  if (evidenceLastRequest === '维修申请') scoreMaintenance += 40;
 
   // RETENTION SCORE
   let scoreRetention = 0;
@@ -280,7 +279,7 @@ export const generateUserProfile = (userId: string, records: IoTRecord[], traine
   if (evidenceSentiment === 'Positive') scoreUpsell += 30;
   if (evidenceOrderFreq < 45) scoreUpsell += 10; // Active enough
   // Penalties for upsell
-  if (evidenceInventoryStatus === 'Critical' || evidenceOpenComplaints.length > 0 || evidenceSentiment === 'Negative') scoreUpsell = -100;
+  if (evidenceInventoryStatus === 'Critical' || evidencePendingTickets > 0 || evidenceSentiment === 'Negative') scoreUpsell = -100;
 
   const scores = {
       replenishment: scoreReplenishment,
@@ -301,7 +300,7 @@ export const generateUserProfile = (userId: string, records: IoTRecord[], traine
           type: 'engagement',
           title: '基础用户关怀 (Engagement)',
           description: '发送品牌故事或咖啡制作技巧，保持品牌认知度。',
-          reasoning: `【综合画像分析】用户当前各项指标平稳，未触发高优先级事件。\n- 活跃度: 正常 (${averageDailyBrews} 杯/日)\n- 情绪: ${evidenceSentiment}\n- 库存: ${evidenceInventoryStatus}\nAI 建议进行软性内容触达，避免过度营销打扰。`,
+          reasoning: `【综合画像分析】8维数据扫描结果平稳，未触发高优先级事件。\n- 活跃度: 正常\n- 情绪: ${evidenceSentiment}\n- 待办工单: 0\nAI 建议进行软性内容触达，避免过度营销打扰。`,
           confidenceScore: 92,
           impactPrediction: '预计活跃度提升: +5%',
           usedAlgorithms: ['Engagement Scorer'],
@@ -316,7 +315,7 @@ export const generateUserProfile = (userId: string, records: IoTRecord[], traine
                 type: 'replenishment',
                 title: '库存智能补货提醒',
                 description: `监测到 ${critItem.name} 即将耗尽，建议推送补货提醒。`,
-                reasoning: `【库存消耗预测模型】\n系统分析了 8 维数据，发现关键触发点：\n1. 库存状态: ${critItem.status} (剩余 ${critItem.currentStock} 颗)\n2. 消耗速率: ${critItem.consumptionRate} 颗/天\n3. 历史订单频率: 每 ${evidenceOrderFreq} 天\n综合计算，预计库存将在 ${critItem.estimatedDaysLeft} 天内耗尽。为保障客户体验，补货推荐置信度极高。`,
+                reasoning: `【库存消耗预测模型】\n基于 8 维数据矩阵分析，发现关键触发点：\n1. [库存状态]: ${critItem.status} (剩余 ${critItem.currentStock} 颗)\n2. [下单频率]: 每 ${evidenceOrderFreq} 天\n3. [消费速率]: ${critItem.consumptionRate} 颗/天\n综合计算，预计库存将在 ${critItem.estimatedDaysLeft} 天内耗尽。为保障客户体验，补货推荐置信度极高。`,
                 confidenceScore: 97,
                 impactPrediction: '避免断货流失',
                 usedAlgorithms: ['Inventory Regression', 'Consumption Velocity'],
@@ -330,7 +329,7 @@ export const generateUserProfile = (userId: string, records: IoTRecord[], traine
                 type: 'maintenance',
                 title: '服务挽救与故障介入',
                 description: '优先处理待办工单，暂停所有营销推送。',
-                reasoning: `【服务风险阻断逻辑】\nAI 决策引擎拦截了营销请求，因为检测到更高优先级的服务风险：\n1. 待办工单: ${evidenceOpenComplaints.length} 个 (类型: ${evidenceOpenComplaints[0]?.type})\n2. 反馈情绪: ${evidenceSentiment}\n3. 最近诉求: ${evidenceLastRequest}\n在解决硬件或服务问题前，任何营销都可能加剧负面情绪。建议立即人工介入。`,
+                reasoning: `【服务风险阻断逻辑】\nAI 决策引擎拦截了营销请求，因为 8 维数据检测到服务风险：\n1. [待办工单]: ${evidencePendingTickets} 个 (高优)\n2. [反馈情绪]: ${evidenceSentiment}\n3. [近期硬件报错]: ${errors} 次\n在解决硬件或服务问题前，任何营销都可能加剧负面情绪。建议立即人工介入。`,
                 confidenceScore: 99,
                 impactPrediction: '降低投诉升级风险',
                 usedAlgorithms: ['Sentiment NLP', 'Ticket Priority'],
@@ -343,7 +342,7 @@ export const generateUserProfile = (userId: string, records: IoTRecord[], traine
                 type: 'retention',
                 title: '高危流失挽留策略',
                 description: '检测到离网倾向，建议发送高额挽留礼包。',
-                reasoning: `【流失预警模型 (Churn Prediction)】\n多维数据表明用户处于高危流失边缘：\n1. 流失概率: ${evidenceChurn}% (阈值 > 70%)\n2. 活跃度趋势: 显著下降 (Slope < 0)\n3. 上次反馈: ${evidenceSentiment}\n鉴于用户 LTV (${evidenceLTV}) 较高，AI 判定挽留 ROI 为正，建议立即投放 20% 折扣券进行激活。`,
+                reasoning: `【流失预警模型 (Churn Prediction)】\n多维数据表明用户处于高危流失边缘：\n1. [流失概率]: ${evidenceChurn}% (阈值 > 70%)\n2. [下单频率]: 显著下降\n3. [LTV 价值]: ${evidenceLTV} (高价值)\n鉴于用户 LTV 较高，AI 判定挽留 ROI 为正，建议立即投放 20% 折扣券进行激活。`,
                 confidenceScore: 89,
                 impactPrediction: '留存率提升: +25%',
                 usedAlgorithms: ['Churn Prediction v2', 'Logistic Regression'],
@@ -370,7 +369,7 @@ export const generateUserProfile = (userId: string, records: IoTRecord[], traine
                 type: 'upsell',
                 title: '精准营销与交叉销售',
                 description: `基于画像推荐购买 ${upsellProduct}。`,
-                reasoning: `【价值最大化模型 (LTV Maximizer)】\n用户处于高价值且活跃状态，适合进行交叉销售：\n1. LTV 得分: ${evidenceLTV} (Top 20%)\n2. 累计消费: ¥${evidenceTotalSpend.toFixed(0)}\n3. 订单频率: 高频 (${evidenceOrderFreq}天/单)\n4. 情绪: ${evidenceSentiment}\n系统判定用户对新品或升级服务的接受度高，建议推送 ${upsellProduct}。`,
+                reasoning: `【价值最大化模型 (LTV Maximizer)】\n用户处于高价值且活跃状态，8 维数据支持交叉销售：\n1. [LTV 得分]: ${evidenceLTV} (Top 20%)\n2. [消费总额]: ¥${evidenceTotalSpend.toFixed(0)}\n3. [下单频率]: 高频 (${evidenceOrderFreq}天/单)\n4. [反馈情绪]: ${evidenceSentiment}\n系统判定用户对新品或升级服务的接受度高，建议推送 ${upsellProduct}。`,
                 confidenceScore: 85,
                 impactPrediction: 'ARPU 提升: +15%',
                 usedAlgorithms: ['RFM Analysis', algoInfo],
@@ -384,14 +383,14 @@ export const generateUserProfile = (userId: string, records: IoTRecord[], traine
 
   // 4. Populate 8 Key Evidence Metrics
   nextBestAction.evidence = [
-      { label: 'LTV 得分', value: evidenceLTV, trend: evidenceLTV > 60 ? 'up' : 'stable', color: evidenceLTV > 70 ? 'green' : 'slate' },
-      { label: '累计消费产品', value: `${evidenceTotalOrders}单`, trend: 'up', color: 'blue' },
-      { label: '订单频率', value: `${evidenceOrderFreq}天/次`, trend: 'stable', color: 'slate' },
-      { label: '累计消费金额', value: `¥${evidenceTotalSpend.toFixed(0)}`, trend: 'up', color: 'green' },
-      { label: '库存状态', value: evidenceInventoryStatus === 'Critical' ? '严重不足' : evidenceInventoryStatus === 'Low' ? '不足' : '充足', trend: evidenceInventoryStatus === 'Critical' ? 'down' : 'stable', color: evidenceInventoryStatus === 'Critical' ? 'red' : 'green' },
+      { label: 'LTV 价值分', value: evidenceLTV, trend: evidenceLTV > 60 ? 'up' : 'stable', color: evidenceLTV > 70 ? 'green' : 'slate' },
+      { label: '累计订单数', value: `${evidenceTotalOrders}单`, trend: 'up', color: 'blue' },
+      { label: '下单频率', value: `${evidenceOrderFreq}天/次`, trend: 'stable', color: 'slate' },
+      { label: '消费总金额', value: `¥${evidenceTotalSpend.toFixed(0)}`, trend: 'up', color: 'green' },
+      { label: '待办工单', value: evidencePendingTickets > 0 ? `${evidencePendingTickets}个` : '无', trend: evidencePendingTickets > 0 ? 'up' : 'stable', color: evidencePendingTickets > 0 ? 'red' : 'slate' },
       { label: '反馈情绪', value: evidenceSentiment === 'Positive' ? '正面' : evidenceSentiment === 'Negative' ? '负面' : '中性', trend: 'stable', color: evidenceSentiment === 'Positive' ? 'green' : evidenceSentiment === 'Negative' ? 'red' : 'slate' },
-      { label: '最近诉求', value: evidenceLastRequest, trend: 'stable', color: evidenceLastRequest === '维修申请' ? 'red' : 'slate' },
-      { label: '客户流失概率', value: `${evidenceChurn}%`, trend: evidenceChurn > 50 ? 'up' : 'stable', color: evidenceChurn > 50 ? 'red' : 'green' }
+      { label: '库存状态', value: evidenceInventoryStatus === 'Critical' ? '严重不足' : evidenceInventoryStatus === 'Low' ? '不足' : '充足', trend: evidenceInventoryStatus === 'Critical' ? 'down' : 'stable', color: evidenceInventoryStatus === 'Critical' ? 'red' : 'green' },
+      { label: '流失概率', value: `${evidenceChurn}%`, trend: evidenceChurn > 50 ? 'up' : 'stable', color: evidenceChurn > 50 ? 'red' : 'green' }
   ];
 
   return {

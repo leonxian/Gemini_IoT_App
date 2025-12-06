@@ -7,9 +7,91 @@ const getClient = () => {
   return new GoogleGenAI({ apiKey });
 };
 
+const generateMockInsight = (modelType: ModelType, stats: AggregatedStats, mlResult?: MLResult): string => {
+  const date = new Date().toLocaleString('zh-CN', { hour12: false });
+  const growthRate = (Math.random() * 15 + 5).toFixed(1);
+  
+  let report = `# 🛡️ 中茶智泡大师 AI 战略洞察报告 (仿真演示版)
+
+> **生成时间**: ${date}
+> **数据源**: IoT Data Lake (实时流数据)
+> **分析引擎**: Neural-Engine v3.5 (Mock Mode)
+
+## 1. 核心运营摘要 (Executive Summary)
+本周期业务运行平稳，各项核心指标表现优异。
+- **总冲泡量**: **${stats.totalBrews.toLocaleString()}** 杯 (环比增长 ↑${growthRate}%)
+- **活跃用户数**: **${stats.activeUsers.toLocaleString()}** 人
+- **最受欢迎饮品**: **${stats.topBeverage}**
+- **平均设备水温**: ${stats.avgTemp.toFixed(1)}°C
+
+`;
+
+  if (modelType === ModelType.SALES_PREDICTION) {
+      report += `## 2. 销售趋势研判与库存预警
+### 📈 趋势预测
+基于 AutoML 回归模型 (Linear Regression / LSTM) 的分析，预计未来 7 天销量将持续走高。
+- **周末效应**: 预计本周五至周日，${stats.topBeverage} 的日均销量将突破 ${(stats.totalBrews / 30 * 1.5).toFixed(0)} 杯。
+- **气温关联**: 随着气温变化，热饮需求预计上升 12%。
+
+### 📦 供应链行动指南
+- **紧急补货**: 建议立即补充 **${stats.topBeverage}** 及 **拿铁 (Latte)** 胶囊库存，当前库存周转天数预估不足 5 天。
+- **备货建议**: 针对下周促销，建议增加 20% 的牛奶储备。
+
+### ⚠️ 异常风险提示
+系统监测到约 ${(stats.errorRate * 100).toFixed(2)}% 的设备存在网络延迟波动，主要集中在晚高峰时段，建议检查区域网关负载。
+`;
+  } else if (modelType === ModelType.USER_PERSONA) {
+      report += `## 2. 用户画像与精准营销
+### 👥 核心客群聚类
+算法识别出三个具有显著商业价值的用户群体：
+1. **晨间提神族 (High Value)**: 占比 45%，偏好高浓度意式浓缩，活跃时间 08:00-09:30。
+2. **下午茶享乐派**: 占比 30%，偏好花式奶咖，对新品接受度高。
+3. **晚间低因养生党**: 占比 15%，偏好茶饮或低因咖啡。
+
+### 🎯 差异化营销策略 (Next Best Action)
+- **针对晨间族**: 推送 "早安能量包" (咖啡 + 早餐券)，提升客单价。
+- **针对享乐派**: 推荐当季新品 "桂花燕麦拿铁"，转化率预估可达 8% 以上。
+- **固件优化**: 针对晚间用户，建议 OTA 推送 "静音萃取模式"，提升夜间使用体验。
+`;
+  } else if (modelType === ModelType.RECOMMENDATION) {
+      report += `## 2. 关联规则与黄金搭配
+### 🔗 强关联发现 (Association Rules)
+通过 Apriori 算法分析，我们发现了以下高置信度购买模式：
+- **购买 [${stats.topBeverage}] 的用户，有 78% 概率在 3 天内复购。**
+- **购买 [Espresso] 的用户，常搭配购买 [气泡水] (Lift > 2.5)。**
+
+### 🛍️ 捆绑销售方案
+- **推荐组合**: "职场充能套装" (${stats.topBeverage} x 20 + 挂耳咖啡 x 5)。
+- **定价策略**: 建议定价 ¥128 (原价 ¥158)，预期能提升 15% 的复购率。
+
+### 📱 APP 推荐位优化
+建议在 APP 首页 "猜你喜欢" 模块，针对喝茶用户优先展示 "茶咖融合套餐"，而非纯咖啡产品。
+`;
+  } else {
+      report += `## 2. 通用业务洞察
+### 🔍 数据发现
+- **饮品偏好**: 用户对 ${stats.topBeverage} 的忠诚度极高，建议作为引流爆品。
+- **设备健康**: 当前设备群平均错误率为 ${(stats.errorRate * 100).toFixed(2)}%，处于健康水平。
+
+### 🚀 增长建议
+1. **活动策划**: 发起 "${stats.topBeverage} 狂欢周"，提升品牌声量。
+2. **用户留存**: 对最近 7 天未活跃的 ${Math.floor(stats.activeUsers * 0.1)} 名用户发送唤醒短信。
+3. **服务升级**: 针对高频报错区域，安排预防性维护巡检。
+`;
+  }
+
+  report += `\n---\n> *注：系统检测到云端 AI 接口不可用 (API Key Missing/Error)，以上内容由本地规则引擎基于实时数据模拟生成，仅用于演示系统功能闭环。*`;
+
+  return report;
+};
+
 export const generateInsight = async (modelType: ModelType, stats: AggregatedStats, mlResult?: MLResult): Promise<string> => {
-  if (!process.env.API_KEY) {
-    return "## API Key Missing\n\nUnable to generate AI insights. Please configure `process.env.API_KEY` to enable the Gemini 2.5 Flash model.";
+  // Check for API Key presence first
+  if (!process.env.API_KEY || process.env.API_KEY.trim() === '') {
+    // console.warn("API Key missing. Generating mock insight.");
+    // Simulate network delay for realism
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return generateMockInsight(modelType, stats, mlResult);
   }
 
   const ai = getClient();
@@ -93,9 +175,10 @@ export const generateInsight = async (modelType: ModelType, stats: AggregatedSta
       model: 'gemini-2.5-flash',
       contents: `${promptContext}\n\n${specificTask}\n\n要求: 回答务必专业、数据驱动、逻辑严密。使用 Markdown 格式，适当使用加粗和列表。`,
     });
-    return response.text || "AI 暂时无法生成报告，请稍后再试。";
+    return response.text || generateMockInsight(modelType, stats, mlResult);
   } catch (error) {
-    console.error("Gemini API Error", error);
-    return "### 报告生成失败\n\n无法连接至 AI 服务。请检查网络连接或 API Key 配置。\n\n(Error: Service Unavailable)";
+    console.warn("Gemini API Error (falling back to mock):", error);
+    // Fallback to mock generation on API error
+    return generateMockInsight(modelType, stats, mlResult);
   }
 };

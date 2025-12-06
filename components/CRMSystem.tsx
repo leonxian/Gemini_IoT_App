@@ -87,11 +87,11 @@ export const CRMSystem: React.FC<CRMProps> = ({ data, trainedModels }) => {
   const handleExportCSV = () => {
     const header = '用户ID,姓名,电话,邮箱,会员等级,LTV得分,累计消费,流失概率,用户标签(Tags),AI建议类型';
     const rows = filteredProfiles.map(p => {
-        const tagString = `"${p.tags.map(t => t.label).join(' | ')}"`;
+        const tagString = `"${p.tags.map(t => `[${t.category}] ${t.label}`).join(' | ')}"`;
         return `${p.userId},${p.name},${p.phone},${p.email},${p.loyaltyTier},${p.ltvScore},${p.financials?.totalSpend?.toLocaleString()},${p.churnProbability},${tagString},${p.nextBestAction.type}`;
     });
     const csv = [header, ...rows].join('\n');
-    const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' })); link.download = `crm_export.csv`; link.click();
+    const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' })); link.download = `crm_export_${Date.now()}.csv`; link.click();
   };
   
   const triggerTags = useMemo(() => {
@@ -293,7 +293,8 @@ export const CRMSystem: React.FC<CRMProps> = ({ data, trainedModels }) => {
                          </div>
                      </div>
                      {/* Evidence Grid Compact (2x4 for 8 metrics) */}
-                     <div className="flex-[2] bg-slate-900/60 border border-slate-800 rounded-xl p-2 grid grid-cols-2 gap-1.5">
+                     <div className="flex-[2] bg-slate-900/60 border border-slate-800 rounded-xl p-2 grid grid-cols-2 gap-1.5 relative overflow-hidden">
+                         <div className="absolute top-0 right-0 px-2 py-0.5 bg-slate-800 rounded-bl text-[8px] text-slate-400 font-bold uppercase tracking-wider border-b border-l border-slate-700">8-Dimensional Data Support</div>
                          {selectedProfile.nextBestAction.evidence?.map((ev,i) => (
                              <div key={i} className="bg-slate-950/50 rounded px-2 py-1.5 border border-slate-800/50 flex flex-col justify-center">
                                  <div className="text-[9px] text-slate-500 font-bold uppercase truncate">{ev.label}</div>
@@ -403,7 +404,7 @@ export const CRMSystem: React.FC<CRMProps> = ({ data, trainedModels }) => {
                                     <td className="px-4 py-2.5 font-mono">{p.ltvScore}</td>
                                     <td className="px-4 py-2.5 font-mono">¥{p.financials?.totalSpend?.toLocaleString()}</td>
                                     <td className={`px-4 py-2.5 font-mono ${p.churnProbability>50?'text-rose-400':'text-emerald-400'}`}>{p.churnProbability}%</td>
-                                    <td className="px-4 py-2.5"><div className="flex flex-wrap gap-1 max-w-[200px]">{p.tags.slice(0,3).map(t => <span key={t.id} className="text-[9px] text-slate-400">{t.label}</span>)}</div></td>
+                                    <td className="px-4 py-2.5"><div className="flex flex-wrap gap-1 max-w-[200px]">{p.tags.map(t => <span key={t.id} className="text-[9px] text-slate-400 border border-slate-700 px-1 rounded-sm block mb-0.5 w-fit">[{t.category}] {t.label}</span>)}</div></td>
                                     <td className="px-4 py-2.5 text-indigo-300 truncate max-w-[150px]">{p.nextBestAction.title}</td>
                                 </tr>
                             ))}

@@ -1,4 +1,5 @@
 
+
 import { IoTRecord, BeverageType, Gender, GeoLocation, MachineFleetStatus, MachineStatus } from '../types';
 
 // Realistic Bounding Boxes for Major Cities (Lat/Lng)
@@ -8,7 +9,11 @@ const CITY_CONFIGS: Record<string, { center: GeoLocation, spread: number }> = {
   'Shenzhen':  { center: { city: 'Shenzhen', lat: 22.5431, lng: 114.0579 }, spread: 0.08 },
   'Guangzhou': { center: { city: 'Guangzhou', lat: 23.1291, lng: 113.2644 }, spread: 0.10 },
   'Chengdu':   { center: { city: 'Chengdu', lat: 30.5728, lng: 104.0668 }, spread: 0.14 },
-  'Hangzhou':  { center: { city: 'Hangzhou', lat: 30.2741, lng: 120.1551 }, spread: 0.10 }
+  'Hangzhou':  { center: { city: 'Hangzhou', lat: 30.2741, lng: 120.1551 }, spread: 0.10 },
+  'Wuhan':     { center: { city: 'Wuhan', lat: 30.5928, lng: 114.3055 }, spread: 0.11 },
+  'Xian':      { center: { city: 'Xian', lat: 34.3416, lng: 108.9398 }, spread: 0.13 },
+  'Chongqing': { center: { city: 'Chongqing', lat: 29.5630, lng: 106.5516 }, spread: 0.15 },
+  'Nanjing':   { center: { city: 'Nanjing', lat: 32.0603, lng: 118.7969 }, spread: 0.10 }
 };
 
 const CITIES = Object.values(CITY_CONFIGS).map(c => c.center);
@@ -19,7 +24,11 @@ const STREET_NAMES: Record<string, string[]> = {
     'Shenzhen': ['深南大道', '滨海大道', '华强北路', '科苑南路', '益田路', '南海大道', '宝安大道', '前海路'],
     'Guangzhou': ['天河路', '北京路', '珠江新城大道', '中山五路', '江南西路', '环市东路', '东风中路', '广州大道'],
     'Chengdu': ['春熙路', '红星路', '天府大道', '蜀都大道', '建设路', '人民南路', '二环路南段', '宽窄巷子'],
-    'Hangzhou': ['延安路', '解放路', '庆春路', '凤起路', '文三路', '滨盛路', '莫干山路', '南山路']
+    'Hangzhou': ['延安路', '解放路', '庆春路', '凤起路', '文三路', '滨盛路', '莫干山路', '南山路'],
+    'Wuhan': ['解放大道', '中山大道', '武珞路', '汉正街', '沿江大道', '建设大道', '珞喻路', '友谊大道'],
+    'Xian': ['长安北路', '友谊西路', '南大街', '东大街', '未央路', '雁塔路', '北大街', '解放路'],
+    'Chongqing': ['解放碑步行街', '中山四路', '南滨路', '北滨路', '观音桥步行街', '红锦大道', '五一路', '邹容路'],
+    'Nanjing': ['中山路', '汉中路', '珠江路', '湖南路', '太平南路', '中央路', '北京东路', '长江路']
 };
 
 const weightedRandom = <T,>(items: T[], weights: number[]): T => {

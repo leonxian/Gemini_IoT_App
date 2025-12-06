@@ -5,7 +5,7 @@ import { IoTRecord, AggregatedStats, TrainedModelRegistry, ModelType, MLResult, 
 import { Dashboard } from './components/Dashboard';
 import { ModelBuilder } from './components/ModelBuilder';
 import { CRMSystem } from './components/CRMSystem';
-import { LayoutDashboard, Database, BrainCircuit, Users, Cpu, LineChart, RefreshCw, Pause, Play, Activity, Server, FileJson, Table, Filter, Search, Terminal, HardDrive, Network, AlertCircle, ChevronDown, ChevronRight, Code, FileSpreadsheet, Download, X, Loader2, Key, Hash, Type, Lock, User, ArrowRight, CheckCircle2, Sparkles, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Database, BrainCircuit, Users, Cpu, LineChart, RefreshCw, Pause, Play, Activity, Server, FileJson, Table, Filter, Search, Terminal, HardDrive, Network, AlertCircle, ChevronDown, ChevronRight, Code, FileSpreadsheet, Download, X, Loader2, Key, Hash, Type, Lock, User, ArrowRight, CheckCircle2, Sparkles, ShieldCheck, LogOut, Zap, Layers } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 
 // --- LOGIN PAGE COMPONENT ---
@@ -268,24 +268,38 @@ const App = () => {
     <div className="h-screen bg-[#020617] text-slate-200 font-sans flex overflow-hidden selection:bg-indigo-500/30">
       
       {/* Sidebar - Precision Layout */}
-      <aside className="w-64 bg-[#0B1120] border-r border-slate-800/80 flex flex-col z-30 shadow-2xl shrink-0">
-        <div className="h-16 flex items-center px-6 gap-3 border-b border-slate-800/80">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
-            <Cpu size={18} className="text-white" strokeWidth={2.5} />
-          </div>
-          <span className="font-bold text-sm tracking-tight text-white truncate">
-            中茶智泡大师<span className="text-indigo-500 ml-1">AI</span>
-          </span>
+      <aside className="w-64 bg-[#0B1120] border-r border-slate-800/80 flex flex-col z-30 shadow-2xl shrink-0 h-full">
+        {/* 1. Header (Fixed) */}
+        <div className="flex flex-col border-b border-slate-800/80 shrink-0">
+            <div className="h-16 flex items-center px-6 gap-3">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
+                    <Cpu size={18} className="text-white" strokeWidth={2.5} />
+                </div>
+                <span className="font-bold text-sm tracking-tight text-white truncate">
+                    中茶智泡大师<span className="text-indigo-500 ml-1">AI</span>
+                </span>
+            </div>
+            {/* LOGOUT BUTTON (SIDEBAR TOP) */}
+            <div className="px-4 pb-4">
+                <button 
+                    onClick={() => setIsAuthenticated(false)}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded bg-rose-950/30 border border-rose-900/50 hover:bg-rose-900/60 hover:border-rose-500/50 text-rose-400 text-[10px] font-bold transition-all uppercase tracking-wider group shadow-sm"
+                >
+                    <LogOut size={12} className="group-hover:scale-110 transition-transform"/> 退出系统
+                </button>
+            </div>
         </div>
 
-        <nav className="flex-1 py-6 px-3 space-y-1">
+        {/* 2. Nav (Scrollable) */}
+        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar min-h-0">
           <SidebarItem icon={<LayoutDashboard size={18} />} label="全域监控总览" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
           <SidebarItem icon={<Users size={18} />} label="智能客户管理" active={activeTab === 'crm'} onClick={() => setActiveTab('crm')} />
           <SidebarItem icon={<BrainCircuit size={18} />} label="AI 模型实验室" active={activeTab === 'models'} onClick={() => setActiveTab('models')} />
            <SidebarItem icon={<Database size={18} />} label="IoT 数据中心" active={activeTab === 'data'} onClick={() => setActiveTab('data')} />
         </nav>
 
-        <div className="p-4 border-t border-slate-800/80">
+        {/* 3. Footer (Fixed at bottom) */}
+        <div className="p-4 border-t border-slate-800/80 bg-[#0B1120] space-y-3 shrink-0">
            <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800 backdrop-blur-sm">
               <div className="text-[10px] text-slate-500 uppercase font-bold flex justify-between tracking-wider">
                 <span>数据库连接状态</span>
@@ -335,8 +349,23 @@ const App = () => {
                     <RefreshCw size={14} />
                  </button>
               </div>
-              <div className="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-indigo-400 ring-2 ring-transparent hover:ring-indigo-500/50 transition-all cursor-pointer">
-                NB
+              
+              {/* HEADER LOGOUT BUTTON */}
+              <button 
+                onClick={() => setIsAuthenticated(false)}
+                className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
+                title="退出登录"
+              >
+                <LogOut size={18} />
+              </button>
+
+              <div 
+                className="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-indigo-400 ring-2 ring-transparent hover:ring-rose-500/50 hover:bg-rose-900/20 hover:text-rose-400 transition-all cursor-pointer group relative"
+                onClick={() => setIsAuthenticated(false)}
+                title="退出登录"
+              >
+                <span className="group-hover:hidden">NB</span>
+                <LogOut size={14} className="hidden group-hover:block" />
               </div>
            </div>
         </header>
@@ -461,81 +490,90 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            {/* KPI Cards */}
+            {/* KPI Cards (Neural Nexus Style) */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { label: '数据湖总容量', val: stats.totalBrews.toLocaleString(), sub: '条记录', est: `Est. ${(stats.totalBrews * 0.0025).toFixed(2)} GB`, icon: Database, color: 'indigo' },
-                    { label: '实时吞吐量 (MPS)', val: '182', sub: 'msg/sec', est: '实时流', icon: Activity, color: 'emerald' },
-                    { label: '数据质量 (Error Rate)', val: `${(stats.errorRate * 100).toFixed(2)}%`, sub: 'Packets', est: 'Valid: 98.4%', icon: AlertCircle, color: stats.errorRate > 0.05 ? 'rose' : 'slate' },
-                    { label: '平均包大小', val: '4.2', sub: 'KB', est: 'Compression: Snappy', icon: Network, color: 'cyan' },
+                    { label: '数据湖总容量', val: stats.totalBrews.toLocaleString(), sub: '条', est: `Est. ${(stats.totalBrews * 0.0025).toFixed(2)} GB`, icon: Database, color: 'indigo', health: 'good' },
+                    { label: '实时吞吐量 (MPS)', val: '182', sub: 'msg/s', est: '实时流', icon: Activity, color: 'emerald', health: 'good' },
+                    { label: '数据质量 (Error Rate)', val: `${(stats.errorRate * 100).toFixed(2)}%`, sub: 'PKTS', est: 'Valid: 98.4%', icon: AlertCircle, color: stats.errorRate > 0.05 ? 'rose' : 'slate', health: stats.errorRate > 0.05 ? 'warning' : 'good' },
+                    { label: '平均包大小', val: '4.2', sub: 'KB', est: 'Format: JSONB', icon: Network, color: 'cyan', health: 'good' },
                 ].map((item, i) => (
-                    <div key={i} className="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-sm hover:border-slate-700 transition-colors group">
-                        <div className="flex justify-between items-start mb-3">
-                             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 group-hover:text-slate-300 transition-colors">
-                                 <item.icon size={14} /> {item.label}
+                    <div key={i} className="bg-[#020617] border border-slate-800 p-5 rounded-xl shadow-2xl hover:border-indigo-500/50 transition-all group relative overflow-hidden">
+                        <div className={`absolute top-0 right-0 w-20 h-20 bg-${item.color}-500/5 rounded-full blur-2xl group-hover:bg-${item.color}-500/10 transition-all`}></div>
+                        <div className="flex justify-between items-start mb-3 relative z-10">
+                             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 group-hover:text-slate-300 transition-colors">
+                                 <item.icon size={14} className={`text-${item.color}-400`} /> {item.label}
                              </div>
-                             {i===1 && <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20 animate-pulse font-mono">LIVE</span>}
+                             {i===1 && <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></span><span className="text-[9px] text-emerald-400 font-mono">LIVE</span></div>}
                         </div>
-                        <div>
-                             <div className={`text-2xl font-mono font-bold ${item.color === 'rose' ? 'text-rose-400' : item.color === 'emerald' ? 'text-emerald-400' : item.color === 'cyan' ? 'text-cyan-400' : 'text-slate-100'}`}>
-                                 {item.val} <span className="text-sm font-sans text-slate-500 font-normal">{item.sub}</span>
+                        <div className="relative z-10">
+                             <div className={`text-2xl font-mono font-bold tracking-tighter ${item.color === 'rose' ? 'text-rose-400' : item.color === 'emerald' ? 'text-emerald-400' : item.color === 'cyan' ? 'text-cyan-400' : 'text-indigo-400'}`}>
+                                 {item.val} <span className="text-xs font-sans text-slate-500 font-normal ml-1">{item.sub}</span>
                              </div>
-                             <div className="text-[10px] text-slate-500 mt-1 font-mono">{item.est}</div>
+                             <div className="text-[10px] text-slate-600 mt-1.5 font-mono flex items-center gap-2">
+                                 <div className={`h-1 flex-1 bg-slate-900 rounded-full overflow-hidden border border-white/5`}>
+                                     <div className={`h-full bg-${item.color}-500/50`} style={{width: '70%'}}></div>
+                                 </div>
+                                 {item.est}
+                             </div>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-6">
-                        <Activity size={14} className="text-indigo-400"/> 数据摄入速率趋势 (Ingestion Stream)
-                    </h3>
-                    <div className="h-64 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[320px]">
+                <div className="lg:col-span-2 bg-[#020617] border border-slate-800 rounded-xl p-0 shadow-2xl flex flex-col relative overflow-hidden">
+                    <div className="p-4 border-b border-white/5 bg-slate-900/30 flex justify-between items-center">
+                        <h3 className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+                            <Activity size={14} /> 数据摄入速率 (Ingestion Velocity)
+                        </h3>
+                        <span className="text-[9px] font-mono text-slate-500">REAL-TIME MONITORING</span>
+                    </div>
+                    <div className="flex-1 min-h-0 w-full p-2">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={ingestionHistory}>
                                 <defs>
                                     <linearGradient id="colorMps" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4}/>
                                         <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                                <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '12px' }} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.5}/>
+                                <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tick={{fontFamily: 'JetBrains Mono'}}/>
+                                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tick={{fontFamily: 'JetBrains Mono'}}/>
+                                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '4px', fontSize: '11px', fontFamily: 'JetBrains Mono' }} itemStyle={{color: '#818cf8'}} />
                                 <Area type="monotone" dataKey="mps" stroke="#6366f1" strokeWidth={2} fill="url(#colorMps)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg flex flex-col">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-6">
-                        <Network size={14} className="text-emerald-400"/> 传输协议分布
-                    </h3>
+                <div className="bg-[#020617] border border-slate-800 rounded-xl p-0 shadow-2xl flex flex-col">
+                    <div className="p-4 border-b border-white/5 bg-slate-900/30">
+                        <h3 className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
+                            <Network size={14} /> 传输协议分布
+                        </h3>
+                    </div>
                     <div className="flex-1 min-h-0 relative">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                                <Pie data={protocolData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                    {protocolData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="transparent" />)}
+                                <Pie data={protocolData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={4} dataKey="value" stroke="none">
+                                    {protocolData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                 </Pie>
-                                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }} />
+                                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', fontSize: '11px' }} itemStyle={{color: '#fff'}} />
                             </PieChart>
                         </ResponsiveContainer>
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="text-center">
-                                <div className="text-[10px] text-slate-500 uppercase">Total</div>
-                                <div className="text-xl font-bold text-white">100%</div>
-                            </div>
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
+                            <div className="text-2xl font-bold text-white font-mono">100%</div>
+                            <div className="text-[9px] text-slate-500 uppercase tracking-widest">Protocol</div>
                         </div>
                     </div>
-                    <div className="flex justify-center gap-4 mt-2">
+                    <div className="flex justify-center gap-4 pb-4">
                         {protocolData.map((entry, index) => (
                             <div key={entry.name} className="flex items-center gap-1.5">
                                 <div className="w-2 h-2 rounded-full" style={{backgroundColor: COLORS[index % COLORS.length]}}></div>
-                                <span className="text-xs text-slate-400">{entry.name}</span>
+                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">{entry.name}</span>
                             </div>
                         ))}
                     </div>
@@ -543,86 +581,111 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
             </div>
 
             {/* Console */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg flex flex-col min-h-[500px]">
-                <div className="bg-slate-950 border-b border-slate-800 p-3 flex flex-col gap-3">
-                    <div className="flex flex-col md:flex-row gap-3 justify-between">
-                        <div className="flex-1 max-w-3xl bg-slate-900 border border-slate-800 rounded-lg flex items-center px-3 py-2 focus-within:border-indigo-500/50 transition-colors relative group">
-                            <Terminal size={14} className="text-indigo-400 mr-3 shrink-0" />
-                            <input 
+            <div className="bg-[#020617] border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex flex-col min-h-[600px] flex-1">
+                <div className="bg-[#0B1120] border-b border-slate-800 p-2 flex justify-between items-center">
+                    <div className="flex items-center gap-2 px-2">
+                        <Terminal size={14} className="text-slate-400" />
+                        <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Data Lake Console</span>
+                    </div>
+                    <div className="flex gap-2">
+                         <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800">
+                             <button onClick={() => setActiveFilters({ city: 'All', beverage: 'All', status: 'All' })} className="px-3 py-1 text-[10px] font-bold text-slate-400 hover:text-white transition-colors uppercase">Reset</button>
+                             <button onClick={() => setShowFilterPanel(!showFilterPanel)} className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all uppercase flex items-center gap-1 ${showFilterPanel ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}><Filter size={10}/> Filter</button>
+                         </div>
+                         <button onClick={() => setShowFullReport(true)} className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-bold text-emerald-400 transition-all uppercase tracking-wider flex items-center gap-1.5"><FileSpreadsheet size={12}/> Report</button>
+                         <button onClick={() => setShowSchemaModal(true)} className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-bold text-indigo-400 transition-all uppercase tracking-wider flex items-center gap-1.5"><Code size={12}/> Schema</button>
+                    </div>
+                </div>
+                
+                {/* Query Bar */}
+                <div className="border-b border-slate-800 p-3 bg-[#050911] flex flex-col gap-3">
+                     <div className="flex gap-2">
+                         <div className="flex-1 relative group">
+                             <div className="absolute left-3 top-2.5 font-mono text-xs text-indigo-500 font-bold pointer-events-none">{">"}</div>
+                             <input 
                                 type="text" 
                                 value={sqlQuery}
                                 onChange={(e) => setSqlQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleRunSQL()}
-                                className="bg-transparent border-none outline-none text-xs font-mono text-slate-300 w-full placeholder:text-slate-600 group-focus-within:text-white"
-                            />
-                            <button 
-                                onClick={handleRunSQL}
-                                disabled={isExecuting}
-                                className={`text-[10px] px-3 py-1 rounded ml-2 font-bold flex items-center gap-1 transition-all uppercase tracking-wider ${
-                                    isExecuting ? 'bg-slate-800 text-slate-500' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                                }`}
-                            >
-                                {isExecuting ? <Loader2 size={10} className="animate-spin"/> : '运行 SQL'}
-                            </button>
-                        </div>
-                        <div className="flex gap-2">
-                            <button onClick={() => setShowFullReport(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-medium text-emerald-400 hover:bg-slate-800 hover:border-emerald-500/50 transition-colors"><FileSpreadsheet size={14}/> 完整报表</button>
-                            <button onClick={() => setShowFilterPanel(!showFilterPanel)} className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors ${showFilterPanel ? 'bg-indigo-900/20 border-indigo-500 text-indigo-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800'}`}><Filter size={14}/> 筛选</button>
-                            <button onClick={() => setShowSchemaModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800 hover:border-indigo-500/50 transition-colors"><Code size={14}/> Schema</button>
-                        </div>
-                    </div>
-                    {showFilterPanel && (
-                        <div className="bg-slate-900/50 border-t border-slate-800/50 pt-3 flex flex-wrap gap-4 items-center animate-in slide-in-from-top-1">
+                                className="w-full bg-[#020617] border border-slate-800 rounded-lg pl-8 pr-20 py-2 text-xs font-mono text-emerald-400 focus:outline-none focus:border-indigo-500/50 transition-all placeholder:text-slate-700"
+                                spellCheck={false}
+                             />
+                             <span className="absolute right-3 top-2.5 text-[10px] text-slate-600 font-mono">SQL</span>
+                         </div>
+                         <button 
+                            onClick={handleRunSQL}
+                            disabled={isExecuting}
+                            className="px-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {isExecuting ? <Loader2 size={12} className="animate-spin"/> : <Play size={12} fill="currentColor"/>}
+                            RUN
+                        </button>
+                     </div>
+                     
+                     {showFilterPanel && (
+                        <div className="flex gap-3 animate-in slide-in-from-top-2">
                             {['city', 'beverage', 'status'].map(key => (
-                                <div key={key} className="flex flex-col gap-1">
-                                    <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{key}</label>
-                                    <select 
-                                        value={(activeFilters as any)[key]}
-                                        onChange={e => setActiveFilters({...activeFilters, [key]: e.target.value})}
-                                        className="bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-300 outline-none focus:border-indigo-500 min-w-[120px]"
-                                    >
-                                        <option value="All">全部 {key.charAt(0).toUpperCase() + key.slice(1)}</option>
-                                        {key === 'status' ? ['Success', 'Error'].map(v => <option key={v} value={v}>{v}</option>) : Object.keys(stats[key === 'city' ? 'cityDistribution' : 'beverageDistribution']).map(v => <option key={v} value={v}>{v}</option>)}
-                                    </select>
-                                </div>
+                                <select 
+                                    key={key}
+                                    value={(activeFilters as any)[key]}
+                                    onChange={e => setActiveFilters({...activeFilters, [key]: e.target.value})}
+                                    className="bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-[10px] font-mono text-slate-300 outline-none focus:border-indigo-500 uppercase"
+                                >
+                                    <option value="All">ALL {key.toUpperCase()}</option>
+                                    {key === 'status' ? ['Success', 'Error'].map(v => <option key={v} value={v}>{v}</option>) : Object.keys(stats[key === 'city' ? 'cityDistribution' : 'beverageDistribution']).map(v => <option key={v} value={v}>{v}</option>)}
+                                </select>
                             ))}
-                            <button onClick={() => setActiveFilters({ city: 'All', beverage: 'All', status: 'All' })} className="mt-4 text-xs text-slate-500 hover:text-indigo-400">重置</button>
                         </div>
-                    )}
+                     )}
                 </div>
 
-                <div className="flex-1 overflow-auto custom-scrollbar relative bg-[#050911]">
-                    <table className="w-full text-left text-xs font-mono border-collapse">
-                        <thead className="bg-slate-900/90 text-slate-500 sticky top-0 z-10 backdrop-blur-md border-b border-slate-800">
+                {/* Data Grid */}
+                <div className="flex-1 overflow-auto custom-scrollbar bg-[#020617] relative">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-[#0B1120] text-slate-500 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th className="px-4 py-3 w-10"></th>
+                                <th className="px-4 py-2 w-10 border-b border-slate-800"></th>
                                 {['TIMESTAMP', 'DEVICE_ID', 'EVENT_TYPE', 'LATENCY', 'STATUS', 'PAYLOAD'].map((h, i) => (
-                                    <th key={h} className={`px-4 py-3 font-semibold tracking-wider ${i > 2 ? 'text-right' : ''}`}>{h}</th>
+                                    <th key={h} className={`px-4 py-2 text-[10px] font-bold font-mono tracking-wider border-b border-slate-800 ${i > 2 ? 'text-right' : ''}`}>{h}</th>
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/50 text-slate-400">
-                            {tableData.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-slate-600 italic">暂无日志数据。</td></tr>}
+                        <tbody className="divide-y divide-slate-800/50 text-slate-400 font-mono text-[11px]">
+                            {tableData.length === 0 && <tr><td colSpan={7} className="text-center py-20 text-slate-600 italic">NO DATA FOUND</td></tr>}
                             {tableData.map((row) => (
                                 <React.Fragment key={row.id}>
                                     <tr 
-                                        className={`hover:bg-slate-800/40 transition-colors cursor-pointer ${expandedRow === row.id ? 'bg-indigo-900/10 border-l-2 border-l-indigo-500' : 'border-l-2 border-l-transparent'}`}
+                                        className={`hover:bg-slate-900/50 transition-colors cursor-pointer group ${expandedRow === row.id ? 'bg-indigo-900/10' : ''}`}
                                         onClick={() => setExpandedRow(expandedRow === row.id ? null : row.id)}
                                     >
-                                        <td className="px-4 py-2.5 text-center">{expandedRow === row.id ? <ChevronDown size={12}/> : <ChevronRight size={12}/>}</td>
-                                        <td className="px-4 py-2.5 text-slate-300">{new Date(row.timestamp).toISOString().replace('T', ' ').slice(0, 19)}</td>
-                                        <td className="px-4 py-2.5 text-indigo-300">{row.machineId}</td>
-                                        <td className="px-4 py-2.5"><span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800/50 text-[10px]">{row.beverage.toUpperCase().replace(' ', '_')}</span></td>
-                                        <td className={`px-4 py-2.5 text-right ${row.telemetry.latency > 150 ? 'text-amber-400' : 'text-slate-400'}`}>{row.telemetry.latency}ms</td>
-                                        <td className="px-4 py-2.5 text-right">{row.telemetry.errorCode ? <span className="text-rose-400 font-bold flex items-center justify-end gap-1"><AlertCircle size={10}/> ERR</span> : <span className="text-emerald-500">OK</span>}</td>
-                                        <td className="px-4 py-2.5 text-right"><span className="text-[10px] text-indigo-400 opacity-70">JSON</span></td>
+                                        <td className="px-4 py-2 text-center text-slate-600 group-hover:text-indigo-400">{expandedRow === row.id ? <ChevronDown size={10}/> : <ChevronRight size={10}/>}</td>
+                                        <td className="px-4 py-2 text-slate-300">{new Date(row.timestamp).toISOString().replace('T', ' ').slice(0, 19)}</td>
+                                        <td className="px-4 py-2 text-indigo-400 font-bold">{row.machineId}</td>
+                                        <td className="px-4 py-2"><span className="px-1.5 py-0.5 rounded border border-slate-800 bg-slate-900 text-[9px] text-slate-400">{row.beverage.toUpperCase().replace(' ', '_')}</span></td>
+                                        <td className={`px-4 py-2 text-right ${row.telemetry.latency > 150 ? 'text-amber-400' : 'text-slate-500'}`}>{row.telemetry.latency}ms</td>
+                                        <td className="px-4 py-2 text-right">{row.telemetry.errorCode ? <span className="text-rose-500 font-bold">ERR</span> : <span className="text-emerald-500 font-bold">OK</span>}</td>
+                                        <td className="px-4 py-2 text-right"><span className="text-[9px] text-indigo-500/50 group-hover:text-indigo-400 transition-colors">{`{...}`}</span></td>
                                     </tr>
                                     {expandedRow === row.id && (
                                         <tr>
-                                            <td colSpan={7} className="px-0 py-0 bg-black">
-                                                <div className="p-4 border-b border-slate-800 relative">
-                                                    <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                                                    <pre className="text-[11px] font-mono text-emerald-300 leading-relaxed overflow-x-auto">{JSON.stringify({ event_id: row.id, device: { fw: row.firmwareVersion, sig: row.telemetry.signalStrength }, params: row.params, usr: { id: row.userId, loc: row.location }, metrics: { lat: row.telemetry.latency, load: row.telemetry.cpuUsage } }, null, 2)}</pre>
+                                            <td colSpan={7} className="px-0 py-0 bg-[#050911]">
+                                                <div className="p-4 border-b border-slate-800 relative grid grid-cols-2 gap-8">
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
+                                                    <div>
+                                                        <div className="text-[9px] font-bold text-slate-600 uppercase mb-2">Raw JSON Payload</div>
+                                                        <pre className="text-[10px] text-emerald-300/90 leading-relaxed overflow-x-auto bg-[#020617] p-3 rounded border border-slate-800">{JSON.stringify({ event_id: row.id, device: { fw: row.firmwareVersion, sig: row.telemetry.signalStrength }, params: row.params, usr: { id: row.userId, loc: row.location }, metrics: { lat: row.telemetry.latency, load: row.telemetry.cpuUsage } }, null, 2)}</pre>
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <div className="text-[9px] font-bold text-slate-600 uppercase mb-2">Metadata</div>
+                                                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                                                <div className="bg-slate-900 p-2 rounded border border-slate-800"><span className="text-slate-500 block text-[8px] uppercase">Firmware</span><span className="text-slate-300 font-mono">{row.firmwareVersion}</span></div>
+                                                                <div className="bg-slate-900 p-2 rounded border border-slate-800"><span className="text-slate-500 block text-[8px] uppercase">Signal</span><span className="text-slate-300 font-mono">{row.telemetry.signalStrength} dBm</span></div>
+                                                                <div className="bg-slate-900 p-2 rounded border border-slate-800"><span className="text-slate-500 block text-[8px] uppercase">CPU Load</span><span className="text-slate-300 font-mono">{row.telemetry.cpuUsage}%</span></div>
+                                                                <div className="bg-slate-900 p-2 rounded border border-slate-800"><span className="text-slate-500 block text-[8px] uppercase">User ID</span><span className="text-slate-300 font-mono">{row.userId}</span></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -633,7 +696,90 @@ const DataExplorerView = ({ data, stats }: { data: IoTRecord[], stats: Aggregate
                     </table>
                 </div>
             </div>
-            {/* Modals for Report/Schema would go here (same as before but using the updated clean styles) */}
+
+            {/* Full Report Modal */}
+            {showFullReport && (
+                <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center backdrop-blur-md animate-in fade-in">
+                    <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-[900px] h-[600px] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+                        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                            <div><h3 className="text-white font-bold text-base flex items-center gap-2"><FileSpreadsheet size={16} className="text-emerald-400"/> 完整 IoT 数据报表</h3></div>
+                            <button onClick={()=>setShowFullReport(false)} className="p-1 hover:bg-slate-800 rounded-full transition-colors"><X size={16} className="text-slate-400"/></button>
+                        </div>
+                        <div className="flex-1 bg-slate-950 overflow-auto custom-scrollbar">
+                            <table className="w-full text-left text-xs font-mono border-collapse relative">
+                            <thead className="bg-slate-900/90 text-slate-400 sticky top-0 z-10 backdrop-blur border-b border-slate-800">
+                                <tr>{['TIMESTAMP','DEVICE_ID','CITY','BEVERAGE','TEMP','LATENCY','ERROR'].map(h=><th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">{h}</th>)}</tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/50 text-slate-300">
+                                {data.slice(0, 1000).map(r => ( // Show first 1000 for performance
+                                    <tr key={r.id} className="hover:bg-slate-900/50">
+                                        <td className="px-4 py-2 text-slate-500">{new Date(r.timestamp).toLocaleString()}</td>
+                                        <td className="px-4 py-2 text-indigo-300">{r.machineId}</td>
+                                        <td className="px-4 py-2 text-white">{r.location.city}</td>
+                                        <td className="px-4 py-2"><span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800/50 text-[10px]">{r.beverage}</span></td>
+                                        <td className={`px-4 py-2 ${r.params.temperature>90?'text-rose-400':'text-slate-300'}`}>{r.params.temperature}°C</td>
+                                        <td className="px-4 py-2 text-slate-500">{r.telemetry.latency}ms</td>
+                                        <td className="px-4 py-2 text-right">{r.telemetry.errorCode ? <span className="text-rose-400 font-bold">ERR</span> : <span className="text-emerald-500">OK</span>}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            </table>
+                        </div>
+                        <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex justify-end">
+                            <button onClick={handleExportCSV} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2"><Download size={14}/> 导出 Excel (CSV)</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Schema Modal */}
+            {showSchemaModal && (
+                <div className="fixed inset-0 z-[3000] bg-black/90 flex items-center justify-center backdrop-blur-md animate-in fade-in">
+                    <div className="bg-[#0B1120] border border-slate-700 p-0 rounded-2xl w-[600px] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+                        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                            <div><h3 className="text-white font-bold text-base flex items-center gap-2"><Code size={16} className="text-indigo-400"/> 数据库 Schema 定义</h3></div>
+                            <button onClick={()=>setShowSchemaModal(false)} className="p-1 hover:bg-slate-800 rounded-full transition-colors"><X size={16} className="text-slate-400"/></button>
+                        </div>
+                        <div className="p-6 bg-[#050911] overflow-auto custom-scrollbar max-h-[500px]">
+                             <div className="space-y-6">
+                                 <div>
+                                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Table: device_logs</h4>
+                                     <table className="w-full text-left text-xs font-mono border-collapse border border-slate-800">
+                                         <thead className="bg-slate-900 text-slate-400">
+                                             <tr><th className="p-2 border border-slate-800">Column</th><th className="p-2 border border-slate-800">Type</th><th className="p-2 border border-slate-800">Description</th></tr>
+                                         </thead>
+                                         <tbody className="text-slate-300">
+                                             <tr><td className="p-2 border border-slate-800 text-emerald-400">id</td><td className="p-2 border border-slate-800">UUID</td><td className="p-2 border border-slate-800">Primary Key</td></tr>
+                                             <tr><td className="p-2 border border-slate-800 text-indigo-400">timestamp</td><td className="p-2 border border-slate-800">TIMESTAMP</td><td className="p-2 border border-slate-800">Event Time (Indexed)</td></tr>
+                                             <tr><td className="p-2 border border-slate-800">machine_id</td><td className="p-2 border border-slate-800">VARCHAR(50)</td><td className="p-2 border border-slate-800">Device Serial</td></tr>
+                                             <tr><td className="p-2 border border-slate-800">telemetry</td><td className="p-2 border border-slate-800">JSONB</td><td className="p-2 border border-slate-800">Raw sensor data</td></tr>
+                                         </tbody>
+                                     </table>
+                                 </div>
+                                 <div>
+                                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">SQL Definition</h4>
+                                     <pre className="bg-black border border-slate-800 p-3 rounded-lg text-xs text-slate-300 leading-relaxed overflow-x-auto">
+{`CREATE TABLE device_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    timestamp TIMESTAMPTZ NOT NULL,
+    machine_id VARCHAR(50) NOT NULL,
+    user_id VARCHAR(50),
+    location JSONB,
+    beverage_type VARCHAR(50),
+    params JSONB,
+    telemetry JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_logs_timestamp ON device_logs(timestamp DESC);
+CREATE INDEX idx_logs_machine ON device_logs(machine_id);`}
+                                     </pre>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
