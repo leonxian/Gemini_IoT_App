@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Line, ComposedChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ReferenceDot, Treemap, ScatterChart, Scatter, ZAxis, ReferenceLine, ReferenceArea, Label, LabelList } from 'recharts';
 import { AggregatedStats, IoTRecord, MachineFleetStatus, MachineStatus, BeverageType, Gender, ModelType } from '../types';
@@ -438,8 +437,8 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
 
           {/* Bottom Row: Deep Dive */}
           <div className="grid grid-cols-12 gap-3 lg:flex-[45] lg:min-h-0 h-auto shrink-0">
-                {/* Regional Heatmap (Span 3) */}
-                <div className="col-span-12 md:col-span-4 lg:col-span-3 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl h-[300px] lg:h-auto min-h-0">
+                {/* Regional Heatmap (Span 4) */}
+                <div className="col-span-12 md:col-span-4 lg:col-span-4 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl h-[300px] lg:h-auto min-h-0">
                     <ChartHeader title="区域销售热力榜" icon={MapPin} color="rose" />
                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
                         {cityHeatmapData.map((item, idx) => (
@@ -449,8 +448,12 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
                                       <span className={`w-4 h-4 rounded flex items-center justify-center text-[9px] font-sans ${idx < 3 ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
                                       <span className="font-sans tracking-wide text-xs">{item.city}</span>
                                   </span>
-                                  <div className="flex flex-col items-end">
+                                  <div className="flex flex-col items-end gap-0.5">
                                       <span className="text-slate-200 font-bold">¥{(item.sales/1000).toFixed(1)}k</span>
+                                      <span className={`flex items-center gap-0.5 text-[9px] font-mono ${item.growth >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                          {item.growth >= 0 ? <ArrowUpRight size={10}/> : <ArrowDownRight size={10}/>}
+                                          {Math.abs(item.growth).toFixed(1)}%
+                                      </span>
                                   </div>
                               </div>
                               <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden border border-white/5">
@@ -461,8 +464,8 @@ const AnalyticsView: React.FC<DashboardProps> = ({ stats, data }) => {
                     </div>
                 </div>
 
-                {/* BCG Matrix (Span 5) */}
-                <div className="col-span-12 md:col-span-8 lg:col-span-5 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl h-[300px] lg:h-auto min-h-0 relative">
+                {/* BCG Matrix (Span 4) */}
+                <div className="col-span-12 md:col-span-8 lg:col-span-4 bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col backdrop-blur-md shadow-2xl h-[300px] lg:h-auto min-h-0 relative">
                     <ChartHeader title="产品波士顿矩阵 (BCG)" icon={Target} color="amber" />
                     <div className="flex-1 min-h-0 relative">
                         {/* Quadrant Backgrounds */}
