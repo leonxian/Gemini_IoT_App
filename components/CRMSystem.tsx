@@ -18,15 +18,15 @@ const TagTrack = ({ icon: Icon, color, title, tags }: any) => (
             <Icon size={10} className={`text-${color}-400`}/>
             <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{title}</span>
         </div>
-        <div className="flex gap-1 overflow-hidden">
+        <div className="flex gap-1 overflow-visible flex-wrap h-auto min-h-[1.25rem]">
             {tags && tags.length > 0 ? tags.slice(0, 3).map((t: any) => (
-                <div key={t.id} className={`text-[9px] px-1.5 py-0.5 rounded border flex items-center gap-1 truncate ${
+                <div key={t.id} className={`text-[9px] px-1.5 py-0.5 rounded border flex items-center gap-1 max-w-full ${
                     color === 'amber' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
                     color === 'rose' ? 'bg-rose-500/10 border-rose-500/20 text-rose-300' :
                     color === 'purple' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
                     'bg-cyan-500/10 border-cyan-500/20 text-cyan-300'
                 }`}>
-                    <div className="w-1 h-1 rounded-full bg-current shrink-0"></div>{t.label}
+                    <div className="w-1 h-1 rounded-full bg-current shrink-0"></div><span className="truncate">{t.label}</span>
                 </div>
             )) : <span className="text-[9px] text-slate-700 italic">-</span>}
         </div>
@@ -36,7 +36,7 @@ const TagTrack = ({ icon: Icon, color, title, tags }: any) => (
 const MetricCompact = ({ label, value, color }: any) => (
     <div className="flex flex-col items-center min-w-[60px]">
         <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">{label}</span>
-        <span className={`text-xl font-mono font-bold tracking-tight ${color === 'rose' ? 'text-rose-400' : color === 'emerald' ? 'text-emerald-400' : 'text-indigo-400'}`}>{value}</span>
+        <span className={`text-xl font-mono font-bold tracking-tight ${color === 'rose' ? 'text-rose-400' : color === 'emerald' ? 'text-emerald-400' : color === 'amber' ? 'text-amber-400' : 'text-indigo-400'}`}>{value}</span>
     </div>
 );
 
@@ -193,47 +193,55 @@ export const CRMSystem: React.FC<CRMProps> = ({ data, trainedModels }) => {
             <div className="flex-1 flex flex-col p-4 gap-4 h-full overflow-y-auto lg:overflow-hidden">
                 
                 {/* L1: Identity Strip (Compact & High Density) */}
-                <div className={`relative rounded-xl overflow-hidden border ${tierConfig.border} bg-slate-900/60 backdrop-blur-xl shrink-0 min-h-[110px] flex flex-col lg:flex-row items-start lg:items-center shadow-lg p-4 lg:p-0`}>
+                <div className={`relative rounded-xl overflow-hidden border ${tierConfig.border} bg-slate-900/60 backdrop-blur-xl shrink-0 min-h-[110px] shadow-lg flex flex-col lg:flex-row`}>
                     {/* Mobile Back Button */}
-                    <button onClick={() => setSelectedUserId(null)} className="lg:hidden absolute top-3 right-3 p-1.5 rounded-full bg-slate-800/50 text-slate-300 hover:text-white">
-                        <ArrowLeft size={16} />
+                    <button onClick={() => setSelectedUserId(null)} className="lg:hidden absolute top-3 right-3 z-20 p-2 rounded-full bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700 shadow-lg">
+                        <ArrowLeft size={18} />
                     </button>
 
-                    <div className="flex flex-col lg:flex-row items-center gap-6 lg:px-6 w-full">
-                        {/* Avatar & Basic */}
-                        <div className="flex items-center gap-4 shrink-0 lg:border-r border-white/5 lg:pr-6 py-2 w-full lg:w-auto">
-                            <div className="relative">
-                                <img src={selectedProfile.avatar} className={`w-14 h-14 rounded-full bg-slate-900 object-cover ring-2 ${tierConfig.icon} shadow-lg`} alt="Avatar" />
-                                <div className="absolute -bottom-1 -right-1 bg-slate-950 rounded-full p-0.5 border border-slate-700">
-                                    <Crown size={10} className={tierConfig.icon} fill="currentColor"/>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex items-baseline gap-2">
-                                    <h1 className="text-xl font-bold text-white tracking-tight">{selectedProfile.name}</h1>
-                                    <span className="text-[10px] font-mono text-slate-500">#{selectedProfile.userId}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-0.5">
-                                    <span className={`uppercase font-bold tracking-wider ${tierConfig.icon}`}>{selectedProfile.loyaltyTier} MEMBER</span>
-                                    <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
-                                    <span className="font-mono">{selectedProfile.phone}</span>
-                                </div>
+                    {/* Section 1: Avatar & Identity */}
+                    <div className="flex items-center gap-5 p-5 lg:py-0 lg:pl-6 lg:pr-6 lg:border-r border-white/5 lg:w-auto w-full relative shrink-0">
+                         <div className="relative shrink-0">
+                            <img src={selectedProfile.avatar} className={`w-16 h-16 lg:w-14 lg:h-14 rounded-full bg-slate-900 object-cover ring-2 ${tierConfig.icon} shadow-2xl`} alt="Avatar" />
+                            <div className="absolute -bottom-1 -right-1 bg-slate-950 rounded-full p-1 lg:p-0.5 border border-slate-700">
+                                <Crown size={12} className={tierConfig.icon} fill="currentColor"/>
                             </div>
                         </div>
-
-                        {/* Categorized Tag DNA Bar */}
-                        <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 items-center w-full">
-                            <TagTrack icon={Gem} color="amber" title="价值资产" tags={profileTags.value} />
-                            <TagTrack icon={ShieldAlert} color="rose" title="风险预警" tags={profileTags.risk} />
-                            <TagTrack icon={Clock} color="cyan" title="习惯偏好" tags={profileTags.habit} />
-                            <TagTrack icon={BrainCircuit} color="purple" title="AI 聚类" tags={profileTags.ai} />
+                        <div className="flex flex-col justify-center min-w-0 pr-8 lg:pr-0">
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                                <h1 className="text-xl lg:text-xl font-bold text-white tracking-tight truncate">{selectedProfile.name}</h1>
+                                <span className="text-xs lg:text-[10px] font-mono text-slate-500">#{selectedProfile.userId}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs lg:text-[10px] text-slate-400 mt-1 flex-wrap">
+                                <span className={`uppercase font-bold tracking-wider ${tierConfig.icon}`}>{selectedProfile.loyaltyTier} MEMBER</span>
+                                <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
+                                <span className="font-mono">{selectedProfile.phone}</span>
+                            </div>
                         </div>
+                    </div>
 
-                        {/* Right: Key Metrics */}
-                        <div className="flex gap-4 shrink-0 lg:border-l border-white/5 lg:pl-6 py-2 w-full lg:w-auto justify-end lg:justify-start">
-                            <MetricCompact label="LTV 评分" value={selectedProfile.ltvScore} color="indigo" />
-                            <MetricCompact label="流失概率" value={`${selectedProfile.churnProbability}%`} color={selectedProfile.churnProbability > 50 ? 'rose' : 'emerald'} />
-                        </div>
+                    {/* Section 2: Metrics (Mobile Only - Horizontal Strip) */}
+                    <div className="flex lg:hidden items-center justify-around w-full border-t border-b border-white/5 bg-slate-900/30 py-3 px-2 gap-2">
+                        <MetricCompact label="LTV 评分" value={selectedProfile.ltvScore} color="indigo" />
+                        <div className="w-px h-8 bg-white/5"></div>
+                        <MetricCompact label="流失概率" value={`${selectedProfile.churnProbability}%`} color={selectedProfile.churnProbability > 50 ? 'rose' : 'emerald'} />
+                        <div className="w-px h-8 bg-white/5"></div>
+                        <MetricCompact label="累计消费" value={`¥${(selectedProfile.financials.totalSpend/1000).toFixed(1)}k`} color="amber" />
+                    </div>
+
+                    {/* Section 3: Tag DNA Bar */}
+                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-6 p-5 lg:py-2 lg:px-6 items-center w-full">
+                        <TagTrack icon={Gem} color="amber" title="价值资产" tags={profileTags.value} />
+                        <TagTrack icon={ShieldAlert} color="rose" title="风险预警" tags={profileTags.risk} />
+                        <TagTrack icon={Clock} color="cyan" title="习惯偏好" tags={profileTags.habit} />
+                        <TagTrack icon={BrainCircuit} color="purple" title="AI 聚类" tags={profileTags.ai} />
+                    </div>
+
+                    {/* Section 4: Metrics (Desktop Only) */}
+                    <div className="hidden lg:flex gap-4 shrink-0 lg:border-l border-white/5 lg:pl-6 py-2 w-auto justify-start pr-6 items-center">
+                         <MetricCompact label="LTV 评分" value={selectedProfile.ltvScore} color="indigo" />
+                         <MetricCompact label="流失概率" value={`${selectedProfile.churnProbability}%`} color={selectedProfile.churnProbability > 50 ? 'rose' : 'emerald'} />
+                         <MetricCompact label="累计消费" value={`¥${(selectedProfile.financials.totalSpend/1000).toFixed(1)}k`} color="amber" />
                     </div>
                 </div>
 

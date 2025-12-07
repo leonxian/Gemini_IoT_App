@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AggregatedStats, IoTRecord, MachineFleetStatus, MachineStatus, BeverageType, Gender, ModelType } from '../types';
 import { getFleetStatus } from '../services/dataGenerator';
 import { generateInsight } from '../services/geminiService';
-import { Activity, Wifi, Map as MapIcon, Zap, TrendingUp, Users, Coffee, Cpu, AlertTriangle, Radio, BarChart3, RotateCcw, MonitorSmartphone, ChevronDown, Target, Crown, Calendar, Filter, FileSpreadsheet, Download, X, Layers, Smartphone, Power, CheckCircle2, ArrowRight, Sparkles, AlertCircle, ArrowUpRight, ArrowDownRight, DollarSign, Percent, Loader2, MapPin, BrainCircuit, FileText, Share2, MoreHorizontal, Search, Terminal, Signal, Server, LocateFixed } from 'lucide-react';
+import { Activity, Wifi, Map as MapIcon, Zap, TrendingUp, Users, Coffee, Cpu, AlertTriangle, Radio, BarChart3, RotateCcw, MonitorSmartphone, ChevronDown, Target, Crown, Calendar, Filter, FileSpreadsheet, Download, X, Layers, Smartphone, Power, CheckCircle2, ArrowRight, Sparkles, AlertCircle, ArrowUpRight, ArrowDownRight, DollarSign, Percent, Loader2, MapPin, BrainCircuit, FileText, Share2, MoreHorizontal, Search, Terminal, Signal, Server, LocateFixed, ArrowLeft } from 'lucide-react';
 import * as L from 'leaflet';
 
 interface DashboardProps {
@@ -615,6 +615,7 @@ const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showLogs, setShowLogs] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -658,6 +659,7 @@ const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
             }
           }, 100);
       }
+      setShowLogs(false);
     }
   }, [selectedMachineId]);
 
@@ -763,6 +765,23 @@ const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
      }));
   }, [selectedMachineId]);
 
+  const handleDownloadLogs = () => {
+    if (!selectedMachineId) return;
+    const logContent = Array.from({length: 50}, (_, i) => {
+        const timestamp = new Date(Date.now() - (50 - i) * 60000).toISOString();
+        const level = Math.random() > 0.95 ? 'ERROR' : Math.random() > 0.8 ? 'WARN' : 'INFO';
+        const msg = level === 'ERROR' ? 'Connection timeout at gateway' : 
+                    level === 'WARN' ? 'Latency jitter detected (>150ms)' : 'Service heartbeat received';
+        return `[${timestamp}] [${level}] ${msg}`;
+    }).join('\n');
+
+    const blob = new Blob([logContent], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `logs_${selectedMachineId}_${Date.now()}.log`;
+    link.click();
+  };
+
   return (
     <div className="flex flex-col lg:h-full h-auto gap-4 pb-2 text-slate-200">
        {/* 1. IoT KPI Hardware Monitors */}
@@ -830,10 +849,10 @@ const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
            </div>
 
            {/* SIDEBAR INTELLIGENCE PANEL (Span 4) */}
-           <div className="lg:col-span-4 flex flex-col gap-4 min-h-0">
+           <div className="lg:col-span-4 flex flex-col gap-4 min-h-0 lg:overflow-y-auto no-scrollbar">
                
                {/* 1. Device Fleet List */}
-               <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl flex flex-col shadow-xl overflow-hidden min-h-[300px]">
+               <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl flex flex-col shadow-xl overflow-hidden min-h-[180px]">
                    <div className="p-3 border-b border-slate-800 bg-slate-950 flex flex-col gap-2 shrink-0">
                        <div className="flex justify-between items-center">
                            <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2"><Server size={14} className="text-indigo-400"/> 设备列表 (Fleet)</h3>
@@ -872,59 +891,80 @@ const TelemetryView: React.FC<DashboardProps> = ({ stats, data }) => {
                </div>
 
                {/* 2. Diagnostic Terminal */}
-               <div className="h-[280px] shrink-0 bg-[#020617] border border-slate-800 rounded-xl flex flex-col shadow-2xl relative overflow-hidden">
+               <div className="h-[320px] shrink-0 bg-[#020617] border border-slate-800 rounded-xl flex flex-col shadow-2xl relative overflow-hidden">
                    <div className="p-3 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center shrink-0">
                        <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2"><Terminal size={14} className="text-emerald-400"/> 诊断终端 (Diagnostics)</h3>
                        {selectedMachineId && <span className="text-[10px] font-mono text-indigo-400 font-bold px-2 py-0.5 bg-indigo-500/10 rounded border border-indigo-500/20">CONNECTED</span>}
                    </div>
 
                    {selectedMachine ? (
-                       <div className="flex-1 p-4 flex flex-col gap-4 relative z-10 animate-in fade-in slide-in-from-bottom-4">
-                           {/* Header Info */}
-                           <div className="flex justify-between items-start">
-                               <div>
-                                   <div className="text-lg font-bold text-white font-mono tracking-tight">{selectedMachine.machineId}</div>
-                                   <div className="text-[10px] text-slate-500 font-mono mt-0.5 flex gap-2">
-                                       <span>FW: v2.1.0</span>
-                                       <span>IP: 10.0.2.{Math.floor(Math.random()*255)}</span>
+                       showLogs ? (
+                           <div className="flex-1 p-4 flex flex-col gap-3 relative z-10 animate-in fade-in slide-in-from-right-8">
+                               <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                                   <div className="text-xs font-bold text-white font-mono flex items-center gap-2"><Terminal size={14} className="text-slate-400"/> System Logs</div>
+                                   <button onClick={() => setShowLogs(false)} className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"><ArrowLeft size={10}/> Back</button>
+                               </div>
+                               <div className="flex-1 bg-black/40 rounded border border-slate-800 p-2 font-mono text-[10px] text-emerald-500/80 overflow-y-auto custom-scrollbar">
+                                   <div className="space-y-1">
+                                       {[...Array(8)].map((_, i) => (
+                                           <div key={i}><span className="text-slate-600">[{new Date(Date.now() - i*1000*60).toLocaleTimeString()}]</span> <span className="text-slate-300">INFO:</span> Service heartbeat (seq={i+100})</div>
+                                       ))}
+                                        <div><span className="text-slate-600">[{new Date().toLocaleTimeString()}]</span> <span className="text-amber-400">WARN:</span> Latency jitter &gt; 50ms</div>
                                    </div>
                                </div>
-                               <div className="text-right">
-                                   <div className={`text-sm font-bold ${selectedMachine.status===MachineStatus.ACTIVE?'text-emerald-400':selectedMachine.status===MachineStatus.MAINTENANCE?'text-amber-400':'text-rose-400'}`}>{selectedMachine.status}</div>
-                                   <div className="text-[9px] text-slate-500 uppercase tracking-wider">System Status</div>
+                               <div className="grid grid-cols-2 gap-2 mt-auto shrink-0">
+                                   <button onClick={() => setShowLogs(false)} className="py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded uppercase tracking-wider transition-all border border-slate-700">Close</button>
+                                   <button onClick={handleDownloadLogs} className="py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded uppercase tracking-wider transition-all shadow-lg shadow-indigo-500/20">Download .LOG</button>
                                </div>
                            </div>
+                       ) : (
+                           <div className="flex-1 p-4 flex flex-col gap-4 relative z-10 animate-in fade-in slide-in-from-bottom-4">
+                               {/* Header Info */}
+                               <div className="flex justify-between items-start">
+                                   <div>
+                                       <div className="text-lg font-bold text-white font-mono tracking-tight">{selectedMachine.machineId}</div>
+                                       <div className="text-[10px] text-slate-500 font-mono mt-0.5 flex gap-2">
+                                           <span>FW: v2.1.0</span>
+                                           <span>IP: 10.0.2.{Math.floor(Math.random()*255)}</span>
+                                       </div>
+                                   </div>
+                                   <div className="text-right">
+                                       <div className={`text-sm font-bold ${selectedMachine.status===MachineStatus.ACTIVE?'text-emerald-400':selectedMachine.status===MachineStatus.MAINTENANCE?'text-amber-400':'text-rose-400'}`}>{selectedMachine.status}</div>
+                                       <div className="text-[9px] text-slate-500 uppercase tracking-wider">System Status</div>
+                                   </div>
+                               </div>
 
-                           {/* Real-time Graphs */}
-                           <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-                               <div className="bg-slate-900/50 border border-slate-800 rounded p-2 flex flex-col relative overflow-hidden">
-                                   <div className="text-[9px] text-slate-500 font-bold uppercase mb-1 z-10 relative">Latency (ms)</div>
-                                   <div className="absolute top-2 right-2 text-[10px] font-mono text-cyan-400 font-bold z-10">{selectedMachine.avgLatency}</div>
-                                   <ResponsiveContainer width="100%" height="100%">
-                                       <AreaChart data={diagData}>
-                                           <defs><linearGradient id="colorLat" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#06b6d4" stopOpacity={0.4}/><stop offset="100%" stopColor="#06b6d4" stopOpacity={0}/></linearGradient></defs>
-                                           <Area type="monotone" dataKey="latency" stroke="#06b6d4" strokeWidth={2} fill="url(#colorLat)" isAnimationActive={false} />
-                                       </AreaChart>
-                                   </ResponsiveContainer>
+                               {/* Real-time Graphs */}
+                               <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+                                   <div className="bg-slate-900/50 border border-slate-800 rounded p-2 flex flex-col relative overflow-hidden">
+                                       <div className="text-[9px] text-slate-500 font-bold uppercase mb-1 z-10 relative">Latency (ms)</div>
+                                       <div className="absolute top-2 right-2 text-[10px] font-mono text-cyan-400 font-bold z-10">{selectedMachine.avgLatency}</div>
+                                       <ResponsiveContainer width="100%" height="100%">
+                                           <AreaChart data={diagData}>
+                                               <defs><linearGradient id="colorLat" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#06b6d4" stopOpacity={0.4}/><stop offset="100%" stopColor="#06b6d4" stopOpacity={0}/></linearGradient></defs>
+                                               <Area type="monotone" dataKey="latency" stroke="#06b6d4" strokeWidth={2} fill="url(#colorLat)" isAnimationActive={false} />
+                                           </AreaChart>
+                                       </ResponsiveContainer>
+                                   </div>
+                                   <div className="bg-slate-900/50 border border-slate-800 rounded p-2 flex flex-col relative overflow-hidden">
+                                       <div className="text-[9px] text-slate-500 font-bold uppercase mb-1 z-10 relative">CPU Load (%)</div>
+                                       <div className="absolute top-2 right-2 text-[10px] font-mono text-amber-400 font-bold z-10">{selectedMachine.cpuLoad}%</div>
+                                       <ResponsiveContainer width="100%" height="100%">
+                                           <AreaChart data={diagData}>
+                                               <defs><linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity={0.4}/><stop offset="100%" stopColor="#f59e0b" stopOpacity={0}/></linearGradient></defs>
+                                               <Area type="monotone" dataKey="cpu" stroke="#f59e0b" strokeWidth={2} fill="url(#colorCpu)" isAnimationActive={false} />
+                                           </AreaChart>
+                                       </ResponsiveContainer>
+                                   </div>
                                </div>
-                               <div className="bg-slate-900/50 border border-slate-800 rounded p-2 flex flex-col relative overflow-hidden">
-                                   <div className="text-[9px] text-slate-500 font-bold uppercase mb-1 z-10 relative">CPU Load (%)</div>
-                                   <div className="absolute top-2 right-2 text-[10px] font-mono text-amber-400 font-bold z-10">{selectedMachine.cpuLoad}%</div>
-                                   <ResponsiveContainer width="100%" height="100%">
-                                       <AreaChart data={diagData}>
-                                           <defs><linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity={0.4}/><stop offset="100%" stopColor="#f59e0b" stopOpacity={0}/></linearGradient></defs>
-                                           <Area type="monotone" dataKey="cpu" stroke="#f59e0b" strokeWidth={2} fill="url(#colorCpu)" isAnimationActive={false} />
-                                       </AreaChart>
-                                   </ResponsiveContainer>
+                               
+                               {/* Quick Actions */}
+                               <div className="grid grid-cols-2 gap-2 mt-auto shrink-0">
+                                   <button className="py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded uppercase tracking-wider transition-all shadow-lg shadow-indigo-500/20">Reboot</button>
+                                   <button onClick={() => setShowLogs(true)} className="py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded uppercase tracking-wider transition-all border border-slate-700">Logs</button>
                                </div>
                            </div>
-                           
-                           {/* Quick Actions */}
-                           <div className="grid grid-cols-2 gap-2 mt-auto">
-                               <button className="py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded uppercase tracking-wider transition-all">Reboot</button>
-                               <button className="py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded uppercase tracking-wider transition-all border border-slate-700">Logs</button>
-                           </div>
-                       </div>
+                       )
                    ) : (
                        <div className="flex-1 p-4 flex flex-col items-center justify-center text-slate-600 font-mono text-xs gap-3">
                            <div className="w-12 h-12 rounded-full border border-slate-800 bg-slate-900 flex items-center justify-center animate-pulse"><Signal size={20}/></div>
