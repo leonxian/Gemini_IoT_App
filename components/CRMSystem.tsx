@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { CustomerProfile, IoTRecord, TrainedModelRegistry, ModelType, CRMTag } from '../types';
 import { getCRMProfiles, TAG_LIBRARY } from '../services/crmEngine';
@@ -10,33 +9,33 @@ interface CRMProps {
   trainedModels?: TrainedModelRegistry;
 }
 
-// --- HELPER COMPONENTS (Defined before use) ---
+// --- HELPER COMPONENTS ---
 
 const TagTrack = ({ icon: Icon, color, title, tags }: any) => (
-    <div className="flex flex-col gap-1.5 min-w-0">
-        <div className="flex items-center gap-1.5 opacity-50">
-            <Icon size={10} className={`text-${color}-400`}/>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">{title}</span>
+    <div className="flex flex-col gap-1.5 min-w-0 h-full p-2 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+        <div className="flex items-center gap-2 opacity-90 pb-1.5 border-b border-white/5 mb-0.5">
+            <Icon size={12} className={`text-${color}-400`}/>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-200 whitespace-nowrap">{title}</span>
         </div>
-        <div className="flex gap-1 overflow-visible flex-wrap h-auto min-h-[1.25rem]">
-            {tags && tags.length > 0 ? tags.slice(0, 3).map((t: any) => (
-                <div key={t.id} className={`text-[9px] px-1.5 py-0.5 rounded border flex items-center gap-1 max-w-full shrink-0 ${
-                    color === 'amber' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
-                    color === 'rose' ? 'bg-rose-500/10 border-rose-500/20 text-rose-300' :
-                    color === 'purple' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
-                    'bg-cyan-500/10 border-cyan-500/20 text-cyan-300'
+        <div className="flex flex-wrap gap-1.5 content-start">
+            {tags && tags.length > 0 ? tags.map((t: any) => (
+                <div key={t.id} className={`text-[9px] px-1.5 py-0.5 rounded border flex items-center gap-1 shadow-sm transition-colors cursor-default hover:bg-opacity-30 whitespace-nowrap ${
+                    color === 'amber' ? 'bg-amber-500/10 border-amber-500/20 text-amber-200' :
+                    color === 'rose' ? 'bg-rose-500/10 border-rose-500/20 text-rose-200' :
+                    color === 'purple' ? 'bg-purple-500/10 border-purple-500/20 text-purple-200' :
+                    'bg-cyan-500/10 border-cyan-500/20 text-cyan-200'
                 }`}>
-                    <div className="w-1 h-1 rounded-full bg-current shrink-0"></div><span className="whitespace-nowrap">{t.label}</span>
+                    <span className="whitespace-nowrap font-medium leading-none py-0.5">{t.label}</span>
                 </div>
-            )) : <span className="text-[9px] text-slate-700 italic">-</span>}
+            )) : <span className="text-[9px] text-slate-600 italic px-1 opacity-50">无标签</span>}
         </div>
     </div>
 );
 
-const MetricCompact = ({ label, value, color }: any) => (
-    <div className="flex flex-col items-center min-w-[60px]">
-        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5 whitespace-nowrap">{label}</span>
-        <span className={`text-xl font-mono font-bold tracking-tight whitespace-nowrap ${color === 'rose' ? 'text-rose-400' : color === 'emerald' ? 'text-emerald-400' : color === 'amber' ? 'text-amber-400' : 'text-indigo-400'}`}>{value}</span>
+const MetricCompact = ({ label, value, color, mobile }: any) => (
+    <div className={`flex flex-col ${mobile ? 'items-center justify-center h-full' : 'items-start justify-center'} min-w-[60px] lg:min-w-[60px] overflow-hidden px-1`}>
+        <span className="text-[8px] lg:text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5 whitespace-nowrap truncate w-full">{label}</span>
+        <span className={`text-xs lg:text-sm font-mono font-bold tracking-tight whitespace-nowrap leading-none truncate w-full ${color === 'rose' ? 'text-rose-400' : color === 'emerald' ? 'text-emerald-400' : color === 'amber' ? 'text-amber-400' : 'text-indigo-400'}`}>{value}</span>
     </div>
 );
 
@@ -190,58 +189,73 @@ export const CRMSystem: React.FC<CRMProps> = ({ data, trainedModels }) => {
             {/* Dynamic Background Glow */}
             <div className={`absolute -top-[20%] -right-[10%] w-[70%] h-[70%] bg-gradient-to-b ${tierConfig.gradient} blur-[120px] pointer-events-none opacity-15`}></div>
 
-            <div className="flex-1 flex flex-col p-4 gap-4 h-full overflow-y-auto lg:overflow-hidden">
+            {/* Changed from overflow-hidden to overflow-y-auto to allow vertical scrolling */}
+            <div className="flex-1 flex flex-col p-4 lg:p-4 gap-8 h-full overflow-y-auto custom-scrollbar">
                 
-                {/* L1: Identity Strip (Compact & High Density) */}
-                <div className={`relative rounded-xl overflow-hidden border ${tierConfig.border} bg-slate-900/60 backdrop-blur-xl shrink-0 min-h-[110px] shadow-lg flex flex-col lg:flex-row`}>
-                    {/* Mobile Back Button */}
-                    <button onClick={() => setSelectedUserId(null)} className="lg:hidden absolute top-3 right-3 z-20 p-2 rounded-full bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700 shadow-lg">
-                        <ArrowLeft size={18} />
+                {/* L1: Identity Strip - Compact */}
+                <div className={`relative rounded-xl overflow-hidden border ${tierConfig.border} bg-slate-900/80 backdrop-blur-xl shrink-0 shadow-2xl flex flex-col lg:flex-row transition-all duration-300`}>
+                    
+                    {/* Mobile Back Button - Absolute top-right */}
+                    <button onClick={() => setSelectedUserId(null)} className="lg:hidden absolute top-3 right-3 z-30 p-2 rounded-full bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700 shadow-lg backdrop-blur">
+                        <ArrowLeft size={16} />
                     </button>
 
-                    {/* Section 1: Avatar & Identity */}
-                    <div className="flex items-center gap-3 p-4 lg:py-0 lg:px-4 lg:border-r border-white/5 lg:w-auto w-full relative shrink-0">
-                         <div className="relative shrink-0">
-                            <img src={selectedProfile.avatar} className={`w-16 h-16 lg:w-12 lg:h-12 rounded-full bg-slate-900 object-cover ring-2 ${tierConfig.icon} shadow-2xl`} alt="Avatar" />
-                            <div className="absolute -bottom-1 -right-1 bg-slate-950 rounded-full p-1 lg:p-0.5 border border-slate-700">
-                                <Crown size={12} className={tierConfig.icon} fill="currentColor"/>
+                    {/* 1. Identity Section */}
+                    <div className="flex items-center gap-4 p-4 lg:py-3 lg:px-4 lg:border-r border-white/10 w-full lg:w-[25%] shrink-0 relative overflow-hidden">
+                         {/* Gradient hint behind avatar */}
+                         <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${tierConfig.gradient}`}></div>
+                         
+                         <div className="relative shrink-0 group">
+                            <img src={selectedProfile.avatar} className={`w-14 h-14 lg:w-10 lg:h-10 rounded-full bg-slate-900 object-cover ring-2 ${tierConfig.icon} shadow-lg group-hover:scale-105 transition-transform duration-500`} alt="Avatar" />
+                            <div className="absolute -bottom-1 -right-1 bg-slate-950 rounded-full p-1 border border-slate-700 shadow-sm">
+                                <Crown size={10} className={tierConfig.icon} fill="currentColor"/>
                             </div>
                         </div>
-                        <div className="flex flex-col justify-center min-w-0 pr-8 lg:pr-0">
-                            <div className="flex items-baseline gap-2 flex-wrap">
-                                <h1 className="text-xl lg:text-lg font-bold text-white tracking-tight truncate">{selectedProfile.name}</h1>
-                                <span className="text-xs lg:text-[10px] font-mono text-slate-500">#{selectedProfile.userId}</span>
+                        
+                        <div className="flex flex-col justify-center min-w-0">
+                            <div className="flex items-baseline gap-2">
+                                <h1 className="text-lg lg:text-base font-bold text-white tracking-tight truncate max-w-[180px]">{selectedProfile.name}</h1>
                             </div>
-                            <div className="flex items-center gap-2 text-xs lg:text-[10px] text-slate-400 mt-1 flex-wrap">
-                                <span className={`uppercase font-bold tracking-wider ${tierConfig.icon}`}>{selectedProfile.loyaltyTier} MEMBER</span>
-                                <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
-                                <span className="font-mono">{selectedProfile.phone}</span>
+                            <div className="flex flex-col gap-0.5 mt-0.5">
+                                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                                     <span>ID: {selectedProfile.userId}</span>
+                                     <span className="w-0.5 h-2 bg-slate-700"></span>
+                                     <span className={tierConfig.icon}>{selectedProfile.loyaltyTier}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono truncate">{selectedProfile.email}</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Section 2: Metrics (Mobile Only - Horizontal Strip) */}
-                    <div className="flex lg:hidden items-center justify-around w-full border-t border-b border-white/5 bg-slate-900/30 py-3 px-2 gap-2">
-                        <MetricCompact label="LTV 评分" value={selectedProfile.ltvScore} color="indigo" />
-                        <div className="w-px h-8 bg-white/5"></div>
-                        <MetricCompact label="流失概率" value={`${selectedProfile.churnProbability}%`} color={selectedProfile.churnProbability > 50 ? 'rose' : 'emerald'} />
-                        <div className="w-px h-8 bg-white/5"></div>
-                        <MetricCompact label="累计消费" value={`¥${(selectedProfile.financials.totalSpend/1000).toFixed(1)}k`} color="amber" />
+                    {/* 2. Metrics Strip (Mobile Only) */}
+                    <div className="grid grid-cols-3 divide-x divide-white/5 border-t border-b border-white/5 bg-slate-950/30 lg:hidden">
+                        <div className="py-2 px-2"><MetricCompact label="LTV 评分" value={selectedProfile.ltvScore} color="indigo" mobile /></div>
+                        <div className="py-2 px-2"><MetricCompact label="流失概率" value={`${selectedProfile.churnProbability}%`} color={selectedProfile.churnProbability > 50 ? 'rose' : 'emerald'} mobile /></div>
+                        <div className="py-2 px-2"><MetricCompact label="累计消费" value={`¥${(selectedProfile.financials.totalSpend/1000).toFixed(1)}k`} color="amber" mobile /></div>
                     </div>
 
-                    {/* Section 3: Tag DNA Bar */}
-                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-6 p-5 lg:py-2 lg:px-4 items-center w-full">
+                    {/* 3. Tag DNA Matrix */}
+                    <div className="w-full lg:w-[50%] shrink-0 p-4 lg:px-4 lg:py-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-4 gap-2 items-stretch content-center bg-slate-900/20 lg:bg-transparent">
                         <TagTrack icon={Gem} color="amber" title="价值资产" tags={profileTags.value} />
                         <TagTrack icon={ShieldAlert} color="rose" title="风险预警" tags={profileTags.risk} />
                         <TagTrack icon={Clock} color="cyan" title="习惯偏好" tags={profileTags.habit} />
                         <TagTrack icon={BrainCircuit} color="purple" title="AI 聚类" tags={profileTags.ai} />
                     </div>
 
-                    {/* Section 4: Metrics (Desktop Only) */}
-                    <div className="hidden lg:flex gap-4 shrink-0 lg:border-l border-white/5 lg:pl-4 py-2 w-auto justify-start pr-4 items-center">
-                         <MetricCompact label="LTV 评分" value={selectedProfile.ltvScore} color="indigo" />
-                         <MetricCompact label="流失概率" value={`${selectedProfile.churnProbability}%`} color={selectedProfile.churnProbability > 50 ? 'rose' : 'emerald'} />
-                         <MetricCompact label="累计消费" value={`¥${(selectedProfile.financials.totalSpend/1000).toFixed(1)}k`} color="amber" />
+                    {/* 4. Metrics Area (Desktop LG+ - Vertical Layout) */}
+                    <div className="hidden lg:flex lg:w-[25%] flex-col justify-center gap-2 px-3 py-2 border-l border-white/10 bg-slate-900/20 shrink-0">
+                         <div className="flex justify-between items-center w-full">
+                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest truncate mr-2">LTV 评分</span>
+                             <span className="text-sm font-mono font-bold text-indigo-400">{selectedProfile.ltvScore}</span>
+                         </div>
+                         <div className="flex justify-between items-center w-full">
+                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest truncate mr-2">流失概率</span>
+                             <span className={`text-sm font-mono font-bold ${selectedProfile.churnProbability > 50 ? 'text-rose-400' : 'text-emerald-400'}`}>{selectedProfile.churnProbability}%</span>
+                         </div>
+                         <div className="flex justify-between items-center w-full">
+                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest truncate mr-2">累计消费</span>
+                             <span className="text-sm font-mono font-bold text-amber-400">¥{(selectedProfile.financials.totalSpend/1000).toFixed(1)}k</span>
+                         </div>
                     </div>
                 </div>
 
@@ -320,7 +334,7 @@ export const CRMSystem: React.FC<CRMProps> = ({ data, trainedModels }) => {
                 </div>
 
                 {/* L3: Data Grid (The "Truth") - Auto Fill Remaining Height */}
-                <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4 pb-4">
+                <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4 pb-4 mt-6">
                     {/* 1. Inventory Vital Signs */}
                     <div className="bg-slate-900/60 border border-slate-800 rounded-xl flex flex-col shadow-lg backdrop-blur-sm overflow-hidden h-[300px] lg:h-auto min-h-0">
                         <div className="p-3 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
